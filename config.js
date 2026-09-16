@@ -1,15 +1,15 @@
 // Copy/paste info from Firebase. Make sure to keep the word "export".
 export const firebaseConfig = {
-    apiKey: "AIzaSyAs9nhZuvHgGlPORPR3c_LYHenXjfbnamo",
-    authDomain: "schoen-poll.firebaseapp.com",
-    projectId: "schoen-poll",
-    storageBucket: "schoen-poll.firebasestorage.app",
-    messagingSenderId: "160493309944",
-    appId: "1:160493309944:web:40201dc27a1749c5a4500d"
+  apiKey: "AIzaSyAo7wH_udIr_Px14hoJs4DnmAyerdOr7SQ",
+  authDomain: "online-polls-fc050.firebaseapp.com",
+  projectId: "online-polls-fc050",
+  storageBucket: "online-polls-fc050.firebasestorage.app",
+  messagingSenderId: "445607454235",
+  appId: "1:445607454235:web:3393f299fb797d5998fabe"
 };
 
 // Specify the URL to the clicker here, for the QR code.
-export const clickerUrl = "https://nicolasboumal.github.io/schoen-poll/";
+export const clickerUrl = "https://scottpesme.github.io/schoen-poll/";
 
 
 // Custom color palette for displaying the results (bubbles)
