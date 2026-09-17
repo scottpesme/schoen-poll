@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Schoen Poll - Clicker</title>
+
+    <!-- KaTeX typesets the LaTeX in the question and in the answer buttons. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
     
     <!-- These are just for the favicon. -->
     <link rel="apple-touch-icon" sizes="180x180" href="/schoen-poll/apple-touch-icon.png">
@@ -31,6 +34,14 @@
         .status-error { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
         .hidden { display: none !important; }
 
+        #questionText {
+            font-size: 1.15rem;
+            line-height: 1.5;
+            color: #1a365d;
+            margin-bottom: 22px;
+            text-align: left;
+        }
+
         .options-container { display: flex; flex-direction: column; gap: 15px; }
         button.option-btn {
             padding: 15px 20px; font-size: 1.2em; cursor: pointer;
@@ -48,6 +59,7 @@
 <body>
 
     <h2>Schoen Poll</h2>
+    <div id="questionText" class="hidden"></div>
     <div id="optionsContainer" class="options-container"></div>
     <div id="statusMessage" class="status-info">Connecting...</div>
 
@@ -57,6 +69,7 @@
         import { getFirestore, doc, onSnapshot, setDoc, getDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         import { firebaseConfig, colors } from "./config.js";
+        import { setMathText } from "./mathtext.js";
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -64,12 +77,14 @@
 
         const statusMessage = document.getElementById('statusMessage');
         const optionsContainer = document.getElementById('optionsContainer');
+        const questionText = document.getElementById('questionText');
         
         let currentUser = null;
         let activeQuestionId = null;
         let currentSelection = null;
         let currentOptions = [];
         let colorClickersEnabled = false;
+        let shownQuestion = null;
 
         const maxClicksPerQuestion = 6; // Feeling facetious?
         let clicksRemaining = maxClicksPerQuestion;
@@ -165,6 +180,14 @@
             let isNewQuestionLoad = false;
             currentOptions = Array.isArray(data.options) ? data.options : [];
             colorClickersEnabled = data.colorClickers === true;
+
+            // Prepared questions carry their text along; LaTeX in it gets typeset.
+            const question = typeof data.question === "string" ? data.question : "";
+            if (question !== shownQuestion) {
+                shownQuestion = question;
+                setMathText(questionText, question);
+            }
+            questionText.classList.toggle('hidden', !question || data.status === "complete");
             
             // Check if the question ID from Firebase is different from our local memory
             if (data.active_question_id !== activeQuestionId) {
@@ -203,7 +226,8 @@
             currentOptions.forEach(optionText => {
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
-                btn.innerText = optionText;
+                btn.dataset.option = optionText; // the raw text; the button shows typeset math
+                setMathText(btn, optionText);
                 
                 if (data.status === "closed") {
                     btn.disabled = true;
@@ -292,7 +316,7 @@
 
                     // Find the matching button and add the 'selected' class
                     document.querySelectorAll('.option-btn').forEach(btn => {
-                        if (btn.innerText === currentSelection) {
+                        if (btn.dataset.option === currentSelection) {
                             btn.classList.add('selected');
                         }
                     });

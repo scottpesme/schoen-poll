@@ -3,6 +3,7 @@ import { getFirestore, doc, onSnapshot, collection } from "https://www.gstatic.c
 
 import { firebaseConfig, clickerUrl, colors, resultStyles } from "./config.js";
 import { initAdminAuth } from "./adminauth.js";
+import { setMathText } from "./mathtext.js";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -17,10 +18,15 @@ let currentOptions = [];
 let currentRadius = 12;
 let baseBubbleSize = 1.0;
 let currentQuestionId = null;
+let currentQuestionText = "";
+let showQuestion = false;
+let labelCounters = new Map(); // option -> the <span>s displaying its tally
 
 // 3. Wait for the DOM to load before grabbing elements
 document.addEventListener("DOMContentLoaded", () => {
     const overlay = document.getElementById('schoenPollOverlay');
+    const labelLayer = document.getElementById('spLabels');
+    const questionBanner = document.getElementById('schoenPollQuestion');
     const qrContainer = document.getElementById('schoenPollQRContainer');
     const qrImage = document.getElementById('spQRimage');
     const qrUrl = document.getElementById('spQRurl');
@@ -41,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (unsubscribeAnswers) unsubscribeAnswers();
             overlay.style.visibility = "hidden"; // this way, SVG retains its size.
             qrContainer.classList.add('hidden'); // this would not be ok for the SVG.
+            questionBanner.classList.add('hidden');
         }
     });
 
@@ -52,6 +59,14 @@ document.addEventListener("DOMContentLoaded", () => {
         unsubscribeLiveState = onSnapshot(doc(db, "state", "live"), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
+
+                // The prepared question text, if the admin launched one
+                const nextQuestionText = typeof data.question === "string" ? data.question : "";
+                if (nextQuestionText !== currentQuestionText) {
+                    currentQuestionText = nextQuestionText;
+                    renderQuestion(currentQuestionText);
+                }
+                updateQuestionVisibility();
 
                 // If the question ID changed, reset the swarm
                 if (data.active_question_id && data.active_question_id !== currentQuestionId) {
@@ -75,6 +90,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else {
                     overlay.style.visibility = "hidden";
                 }
+
+                // Show/hide the question text (independent of the results)
+                showQuestion = data.showQuestion === true;
+                updateQuestionVisibility();
 
                 // Show/hide the QR code
                 if (data.showQR) {
@@ -102,11 +121,25 @@ document.addEventListener("DOMContentLoaded", () => {
         const style = resultStyles.find((candidate) => candidate.id === resultStyleId) || resultStyles[0];
         if (!style) return;
 
+        const root = document.documentElement;
         document.body.style.backgroundColor = style.backgroundColor;
-        overlay.style.setProperty('--sp-label-color', style.labelColor);
-        overlay.style.setProperty('--sp-label-size', style.labelSize);
-        overlay.style.setProperty('--sp-label-outline-color', style.labelOutlineColor);
-        overlay.style.setProperty('--sp-label-outline-width', `${style.labelOutlineWidth}px`);
+        root.style.setProperty('--sp-label-color', style.labelColor);
+        root.style.setProperty('--sp-label-size', style.labelSize);
+        root.style.setProperty('--sp-label-outline-color', style.labelOutlineColor);
+        root.style.setProperty('--sp-label-outline-width', `${style.labelOutlineWidth}px`);
+        root.style.setProperty('--sp-question-color', style.questionColor || style.labelColor);
+        root.style.setProperty('--sp-question-size', style.questionSize || "2.6rem");
+    }
+
+    // 4b. The prepared question banner
+    function renderQuestion(text) {
+        questionBanner.replaceChildren();
+        if (!text) return;
+        questionBanner.appendChild(buildOutlinedMath(text).outlined);
+    }
+
+    function updateQuestionVisibility() {
+        questionBanner.classList.toggle('hidden', !(showQuestion && currentQuestionText));
     }
 
     // 5. D3 Physics & Drawing Logic
@@ -137,14 +170,10 @@ document.addEventListener("DOMContentLoaded", () => {
             .domain(options)
             .range(colors);
 
-        // Draw classy text labels at the bottom
-        svg.selectAll(".label")
-            .data(options).enter().append("text")
-            .attr("class", "label")
-            .attr("x", d => xScale(d))
-            .attr("y", 0.75*height)
-            .attr("text-anchor", "middle")
-            .text(d => `${d} (0)`);
+        // Draw classy text labels at the bottom.
+        // They are HTML overlaid on the SVG (1:1 with its pixels), so that
+        // LaTeX in the options can be typeset.
+        drawLabels(options, xScale, 0.75 * height);
 
         simulation = d3.forceSimulation(nodes)
             .force("x", d3.forceX(d => xScale(d.choice)).strength(0.10))
@@ -166,6 +195,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // Lay out one HTML label per option, centered on its column of bubbles.
+    function drawLabels(options, xScale, y) {
+        labelLayer.replaceChildren();
+        labelCounters = new Map();
+
+        options.forEach(option => {
+            const label = document.createElement('div');
+            label.className = 'sp-label';
+            label.style.left = `${xScale(option)}px`;
+            label.style.top = `${y}px`;
+
+            // Each layer of the outline carries its own copy of the tally.
+            const { outlined, layers } = buildOutlinedMath(option);
+            const counters = layers.map(layer => {
+                const counter = document.createElement('span');
+                counter.className = 'sp-label-count';
+                counter.textContent = " (0)";
+                layer.appendChild(counter);
+                return counter;
+            });
+
+            label.appendChild(outlined);
+            labelLayer.appendChild(label);
+            labelCounters.set(option, counters);
+        });
+    }
+
     function listenToAnswers(questionId) {
         if (unsubscribeAnswers) unsubscribeAnswers();
 
@@ -179,7 +235,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (tallies.has(choice)) tallies.set(choice, tallies.get(choice) + 1);
             });
 
-            d3.select("#spChart").selectAll(".label").text(d => `${d} (${tallies.get(d)})`).raise(); // raise() makes the text appear on top of circles
+            currentOptions.forEach(opt => {
+                const counters = labelCounters.get(opt);
+                if (counters) counters.forEach(span => span.textContent = ` (${tallies.get(opt)})`);
+            });
 
             nodes = nodes.filter(n => newVotesMap.has(n.id));
 
@@ -221,4 +280,23 @@ function updateBubbleSizes() {
         simulation.force("collide", d3.forceCollide().radius(currentRadius + 1).iterations(2));
         simulation.alpha(0.3).restart(); 
     }
+}
+
+// Paint the same (LaTeX-typeset) text twice: a thick stroke underneath, then the
+// fill on top. This is the HTML equivalent of SVG's paint-order: stroke, and it
+// keeps text readable over slides, bubbles or a projected board.
+function buildOutlinedMath(text) {
+    const outlined = document.createElement('span');
+    outlined.className = 'sp-outlined';
+
+    const layers = ['sp-outline-stroke', 'sp-outline-fill'].map(className => {
+        const layer = document.createElement('span');
+        layer.className = className;
+        setMathText(layer, text);
+        if (className === 'sp-outline-stroke') layer.setAttribute('aria-hidden', 'true');
+        outlined.appendChild(layer);
+        return layer;
+    });
+
+    return { outlined, layers };
 }

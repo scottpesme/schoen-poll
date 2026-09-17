@@ -25,7 +25,7 @@ Then:
 7. Copy the files from this repo and serve them from wherever (e.g., using Github Pages or Firebase hosting).
 8. In `config.js`, copy your Firebase config data (see step 6, or go to Settings -> General in Firebase).
 9. In `config.js`, also update `clickerUrl` with the full URL to your clicker (the `index.html` page).
-10. That's also where you can edit the bubble colors, default answer-options, and results-page styles.
+10. That's also where you can edit the bubble colors, the questions you prepare ahead of time, the default answer-options, and the results-page styles.
 
 Usage should be self explanatory. In a nutshell:
 
@@ -34,6 +34,32 @@ Usage should be self explanatory. In a nutshell:
 * Open `results.html` on your lecture screen.
 * Alternatively, look inside `results.html` and copy its relevant code to your setup: perfect for a [revealjs](https://revealjs.com/)-style presentation!
 * The `history.html` page displays past questions and answers.
+
+
+## Prepared questions and LaTeX
+
+Questions can be written ahead of time in `config.js`, under `preparedQuestions`. Each entry has the answer `options`, an optional `question` text, and an optional private `label` for the history page:
+
+```js
+export const preparedQuestions = [
+    {
+        question: String.raw`Is $\sum_{n=1}^{\infty} \frac{1}{n}$ convergent?`,
+        options: ['Yes', 'No', 'Unsure'],
+        label: "Harmonic series"
+    }
+];
+```
+
+They appear at the top of the admin remote's launchpad, above the usual question types. Launching one puts the question on the results page immediately, while the results stay hidden: the **Show question** / **Hide question** button on the remote toggles the text, and **Reveal answers** still toggles the bubbles, independently. Moving on to the next question hides both.
+
+Both the question text and the answer options can contain LaTeX, written between `$...$` (inline) or `$$...$$` (displayed). It is typeset with [KaTeX](https://katex.org) (loaded from a CDN, like D3) on the results page, on the participants' clicker buttons, on the remote, and in the history. The only exception is the doughnut chart on the remote: it is drawn on a canvas by Chart.js, which shows the raw text.
+
+In `config.js`, prefer ``String.raw`...` `` as above, so that backslashes can be written normally. With ordinary quotes, every backslash must be doubled: `"Is $\\pi$ rational?"`.
+
+Two things to keep in mind:
+
+* A question launched without prepared text (the usual "Yes / No" style buttons) simply has no question on screen, exactly as before.
+* The Firestore rules below limit an answer to fewer than 100 characters, which is the LaTeX source of an option, not its rendered length. Long options need that limit raised.
 
 
 ## Side notes

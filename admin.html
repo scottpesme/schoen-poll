@@ -12,6 +12,9 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/schoen-poll/favicon-16x16.png">
     <link rel="manifest" href="/schoen-poll/site.webmanifest">
 
+    <!-- KaTeX typesets the LaTeX in prepared questions and answer options. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
@@ -73,6 +76,43 @@
         button:active { transform: scale(0.97); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
 
+        /* Prepared Questions (from config.js) */
+        #preparedSection { margin-bottom: 25px; }
+        .prepared-list { display: flex; flex-direction: column; gap: 10px; }
+        .prepared-btn {
+            background: white;
+            color: #1a365d;
+            border: 1px solid #cbd5e1;
+            padding: 14px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            font: 600 1rem system-ui, -apple-system, sans-serif;
+            line-height: 1.4;
+        }
+        .prepared-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #64748b;
+        }
+        .prepared-options .separator { color: #cbd5e1; }
+
+        /* The question of the running poll */
+        .current-question {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 15px;
+            color: #1a365d;
+            font: 600 1rem system-ui, -apple-system, sans-serif;
+            line-height: 1.4;
+        }
+
         /* Launchpad Grid */
         .launch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; }
         .launch-btn { background: #4285F4; color: white; padding: 20px 10px; font-size: 1rem; line-height: 1.3; }
@@ -128,6 +168,11 @@
         }
 
         .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .controls-grid .span-2 { grid-column: 1 / -1; }
+
+        /* The Show / Hide Question Button */
+        #showQuestionBtn { background: #1a365d; color: white; padding: 12px 8px; min-height: 48px; font-size: 1rem; transition: background 0.2s; }
+        #showQuestionBtn.active-state { background: #64748b; }
         
         /* The Close / Re-open Button */
         #toggleOpenCloseBtn { background: #334155; color: white; padding: 14px 8px; min-height: 58px; font-size: 1rem; line-height: 1.15; transition: background 0.2s; }
@@ -213,6 +258,11 @@
         </div>
 
         <div id="launchpadSection">
+            <div id="preparedSection" class="hidden">
+                <h3 style="margin-bottom: 15px; color: #666;">Prepared questions</h3>
+                <div class="prepared-list" id="preparedList"></div>
+            </div>
+
             <h3 style="margin-bottom: 20px; color: #666;">Select a question type</h3>
             <div class="launch-grid">
                 <button class="launch-btn" id="customLaunchBtn" style="background: #1a365d;">Custom...</button>
@@ -220,6 +270,8 @@
         </div>
 
         <div id="controlDeckSection" class="hidden">
+            <div id="currentQuestionText" class="current-question hidden"></div>
+
             <div class="chart-container">
                 <canvas id="talliesChart"></canvas>
             </div>
@@ -231,6 +283,7 @@
             <div class="controls-grid">
                 <button id="toggleOpenCloseBtn">Stop taking answers</button>
                 <button id="revealBtn">Reveal answers</button>
+                <button id="showQuestionBtn" class="span-2 hidden">Show question on screen</button>
             </div>
 
             <button id="finishBtn" class="hollow-btn">Move on to the next question</button>
@@ -272,8 +325,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, setDoc, collection, addDoc, serverTimestamp, onSnapshot, getDocs, deleteField, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
-        import { firebaseConfig, colors, presetButtons, resultStyles } from "./config.js";
+        import { firebaseConfig, colors, presetButtons, preparedQuestions, resultStyles } from "./config.js";
         import { initAdminAuth } from "./adminauth.js";
+        import { setMathText } from "./mathtext.js";
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -297,6 +351,10 @@
         const resultStyleButtons = document.getElementById('resultStyleButtons');
         const questionLabelEditor = document.querySelector('.question-label-editor');
         const questionLabelDisplay = document.getElementById('questionLabelDisplay');
+        const preparedSection = document.getElementById('preparedSection');
+        const preparedList = document.getElementById('preparedList');
+        const currentQuestionText = document.getElementById('currentQuestionText');
+        const showQuestionBtn = document.getElementById('showQuestionBtn');
 
         // State Variables
         let currentLiveState = {};
@@ -308,6 +366,7 @@
         let currentLabelQuestionId = null;
         let lastSavedLabel = "";
         let isEditingQuestionLabel = false;
+        let shownQuestion = null;
         
         let seenUserIds = new Set();
         let currentVoteCount = 0;
@@ -468,6 +527,8 @@
                         revealBtn.classList.remove('active-state');
                     }
 
+                    updateShowQuestionButton();
+
                     // Update QR Toggle UI
                     if (currentDisplayState.showQR) {
                         qrToggleCheckbox.checked = true;
@@ -485,6 +546,24 @@
                     updateResultStyleControls(currentDisplayState.resultStyleId);
                 }
             });
+        }
+
+        // The question of the running poll: shown here, and (on demand) on the results page.
+        function renderCurrentQuestion() {
+            const questionText = typeof currentLiveState.question === "string" ? currentLiveState.question : "";
+            if (questionText !== shownQuestion) {
+                shownQuestion = questionText;
+                setMathText(currentQuestionText, questionText);
+            }
+            currentQuestionText.classList.toggle('hidden', !questionText);
+            showQuestionBtn.classList.toggle('hidden', !questionText);
+            updateShowQuestionButton();
+        }
+
+        function updateShowQuestionButton() {
+            const isShowing = currentDisplayState.showQuestion === true;
+            showQuestionBtn.innerText = isShowing ? "Hide question" : "Show question on screen";
+            showQuestionBtn.classList.toggle('active-state', isShowing);
         }
 
         function updateResultStyleControls(resultStyleId) {
@@ -526,6 +605,8 @@
                     toggleOpenCloseBtn.innerText = "Resume taking answers";
                     toggleOpenCloseBtn.classList.add('reopen-state');
                 }
+
+                renderCurrentQuestion();
 
                 if (currentLiveState.active_question_id) {
                     listenToAdminVotes(currentLiveState.active_question_id);
@@ -650,24 +731,34 @@
 
         // --- CORE ACTIONS ---
 
-        async function launchQuestion(optionsArray) {
+        async function launchQuestion(optionsArray, rawQuestion = "", rawLabel = "") {
             if (!optionsArray || optionsArray.length === 0) return;
+
+            const questionText = typeof rawQuestion === "string" ? rawQuestion.trim() : "";
+            // The optional private label, kept separate from the question text.
+            const label = typeof rawLabel === "string" ? rawLabel.trim() : "";
+
             try {
                 const questionRef = await addDoc(collection(db, "questions"), {
                     timestamp: serverTimestamp(),
-                    options: optionsArray
+                    options: optionsArray,
+                    ...(questionText ? { question: questionText } : {}),
+                    ...(label ? { label: label } : {})
                 });
                 
-                // Write to live state
+                // Write to live state (the clickers read the question text from here)
                 await setDoc(doc(db, "state", "live"), {
                     active_question_id: questionRef.id,
                     status: "open",
-                    options: optionsArray
+                    options: optionsArray,
+                    question: questionText || deleteField()
                 }, { merge: true });
 
-                // Reset the display state for the new question, preserving other states (QR)
+                // Reset the display state for the new question, preserving other states (QR).
+                // A prepared question goes up on the screen right away; the results do not.
                 await setDoc(doc(db, "state", "display"), {
-                    reveal: false
+                    reveal: false,
+                    showQuestion: questionText.length > 0
                 }, { merge: true });
 
             } catch (error) {
@@ -696,6 +787,50 @@
         presetButtons.forEach(optionsArray => {
             addLaunchButton(optionsArray, true);
         });
+
+        // Questions prepared ahead of time in config.js, LaTeX and all.
+        function addPreparedButton(prepared) {
+            const btn = document.createElement('button');
+            btn.className = 'prepared-btn';
+
+            const questionLine = document.createElement('span');
+            setMathText(questionLine, prepared.question || (prepared.label || "Untitled question"));
+            btn.appendChild(questionLine);
+
+            const optionsLine = document.createElement('span');
+            optionsLine.className = 'prepared-options';
+            prepared.options.forEach((option, index) => {
+                if (index > 0) {
+                    const separator = document.createElement('span');
+                    separator.className = 'separator';
+                    separator.textContent = "/";
+                    optionsLine.appendChild(separator);
+                }
+                const optionSpan = document.createElement('span');
+                setMathText(optionSpan, option);
+                optionsLine.appendChild(optionSpan);
+            });
+            btn.appendChild(optionsLine);
+
+            btn.addEventListener('click', () => {
+                launchQuestion(prepared.options, prepared.question, prepared.label);
+            });
+
+            preparedList.appendChild(btn);
+        }
+
+        // Skip malformed entries, and drop empty or repeated options (repeats would
+        // collide in the tallies and in the results layout).
+        const validPreparedQuestions = (Array.isArray(preparedQuestions) ? preparedQuestions : [])
+            .filter(prepared => prepared && Array.isArray(prepared.options))
+            .map(prepared => ({
+                ...prepared,
+                options: [...new Set(prepared.options.map(option => String(option).trim()).filter(option => option.length > 0))]
+            }))
+            .filter(prepared => prepared.options.length > 0);
+
+        validPreparedQuestions.forEach(addPreparedButton);
+        preparedSection.classList.toggle('hidden', validPreparedQuestions.length === 0);
         
         document.getElementById('customLaunchBtn').addEventListener('click', () => {
             const userInput = prompt("Enter custom options, separated by commas:\n(e.g.: Apple, Banana, Cherry)", "");
@@ -717,6 +852,14 @@
             
             await setDoc(doc(db, "state", "display"), { 
                 reveal: !currentDisplayState.reveal
+            }, { merge: true });
+        });
+
+        showQuestionBtn.addEventListener('click', async () => {
+            if (!currentLiveState.question) return;
+
+            await setDoc(doc(db, "state", "display"), {
+                showQuestion: !currentDisplayState.showQuestion
             }, { merge: true });
         });
 
@@ -755,7 +898,8 @@
                     status: "complete"
                 }, { merge: true });
                 batch.set(doc(db, "state", "display"), {
-                    reveal: false
+                    reveal: false,
+                    showQuestion: false
                 }, { merge: true });
                 await batch.commit();
             } catch (error) {

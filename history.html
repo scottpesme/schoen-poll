@@ -12,6 +12,9 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/schoen-poll/favicon-16x16.png">
     <link rel="manifest" href="/schoen-poll/site.webmanifest">
 
+    <!-- KaTeX typesets the LaTeX in questions and answer options. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
+
     <style>
         body {
             font-family: system-ui, -apple-system, sans-serif;
@@ -94,6 +97,7 @@
             border-color: #4285F4;
             box-shadow: 0 0 0 3px rgba(66,133,244,0.15);
         }
+        .question-text { color: #1a365d; font: 600 1.05rem system-ui, -apple-system, sans-serif; line-height: 1.45; margin-bottom: 8px; }
         .question-time { font-size: 0.9rem; color: #888; margin-bottom: 10px; font-weight: bold; }
         
         /* Stacked Bar Chart */
@@ -185,6 +189,7 @@
         
         import { firebaseConfig, colors } from "./config.js";
         import { initAdminAuth } from "./adminauth.js";
+        import { setMathText } from "./mathtext.js";
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -286,6 +291,7 @@
                         dateStr,
                         timeStr,
                         label: typeof data.label === "string" ? data.label : "",
+                        question: typeof data.question === "string" ? data.question : "",
                         options: data.options,
                         tallies,
                         totalVotes
@@ -376,6 +382,13 @@
 
                         card.appendChild(createLabelEditor(q));
 
+                        if (q.question) {
+                            const questionDiv = document.createElement('div');
+                            questionDiv.className = 'question-text';
+                            setMathText(questionDiv, q.question);
+                            card.appendChild(questionDiv);
+                        }
+
                         const timeHeader = document.createElement('div');
                         timeHeader.className = 'question-time';
                         timeHeader.innerText = `${q.timeStr} — ${q.totalVotes} total votes`;
@@ -412,10 +425,19 @@
                             // 2. Build the corresponding legend item
                             const legendItem = document.createElement('div');
                             legendItem.className = 'legend-item';
-                            legendItem.innerHTML = `
-                                <div class="legend-swatch" style="background-color: ${color};"></div>
-                                <strong>${opt}</strong>&nbsp;— ${count} vote${count !== 1 ? 's' : ''} (${Math.round(percentage)}%)
-                            `;
+
+                            const swatch = document.createElement('div');
+                            swatch.className = 'legend-swatch';
+                            swatch.style.backgroundColor = color;
+                            legendItem.appendChild(swatch);
+
+                            const optionName = document.createElement('strong');
+                            setMathText(optionName, opt);
+                            legendItem.appendChild(optionName);
+
+                            const countText = document.createElement('span');
+                            countText.innerHTML = `&nbsp;— ${count} vote${count !== 1 ? 's' : ''} (${Math.round(percentage)}%)`;
+                            legendItem.appendChild(countText);
                             legendDiv.appendChild(legendItem);
                         });
 
