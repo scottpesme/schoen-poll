@@ -282,7 +282,7 @@
 
             <div class="controls-grid">
                 <button id="toggleOpenCloseBtn">Stop taking answers</button>
-                <button id="revealBtn">Reveal answers</button>
+                <button id="revealBtn">Reveal results</button>
                 <button id="showQuestionBtn" class="span-2 hidden">Show question on screen</button>
             </div>
 
@@ -520,10 +520,10 @@
 
                     // Update Reveal Button UI
                     if (currentDisplayState.reveal) {
-                        revealBtn.innerText = "Hide answers";
+                        revealBtn.innerText = "Hide results";
                         revealBtn.classList.add('active-state');
                     } else {
-                        revealBtn.innerText = "Reveal answers";
+                        revealBtn.innerText = "Reveal results";
                         revealBtn.classList.remove('active-state');
                     }
 

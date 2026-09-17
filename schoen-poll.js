@@ -14,17 +14,18 @@ let unsubscribeDisplayState = null; // Listener for the presentation flags
 let unsubscribeAnswers = null;
 let simulation;
 let nodes = [];
-let currentOptions = [];
 let currentRadius = 12;
 let baseBubbleSize = 1.0;
 let currentQuestionId = null;
 let currentQuestionText = "";
 let showQuestion = false;
-let labelCounters = new Map(); // option -> the <span>s displaying its tally
+let isAdmin = false;        // an admin is logged in on this screen
+let revealResults = false;  // the admin revealed the vote bubbles
+let questionIsLive = false; // a question is running (not finished)
 
 // 3. Wait for the DOM to load before grabbing elements
 document.addEventListener("DOMContentLoaded", () => {
-    const overlay = document.getElementById('schoenPollOverlay');
+    const chart = document.getElementById('spChart');
     const labelLayer = document.getElementById('spLabels');
     const questionBanner = document.getElementById('schoenPollQuestion');
     const qrContainer = document.getElementById('schoenPollQRContainer');
@@ -38,14 +39,17 @@ document.addEventListener("DOMContentLoaded", () => {
         authMessage: document.getElementById('spAuthMessage')
     }, {
         onAdminSuccess: (user) => {
+            isAdmin = true;
             startListening();
+            updateOverlayVisibility();
         },
         onLoggedOut: () => {
+            isAdmin = false;
             if (simulation) simulation.stop();
             if (unsubscribeLiveState) unsubscribeLiveState();
             if (unsubscribeDisplayState) unsubscribeDisplayState();
             if (unsubscribeAnswers) unsubscribeAnswers();
-            overlay.style.visibility = "hidden"; // this way, SVG retains its size.
+            updateOverlayVisibility();
             qrContainer.classList.add('hidden'); // this would not be ok for the SVG.
             questionBanner.classList.add('hidden');
         }
@@ -59,6 +63,9 @@ document.addEventListener("DOMContentLoaded", () => {
         unsubscribeLiveState = onSnapshot(doc(db, "state", "live"), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
+
+                // The options stay on screen for as long as the question runs
+                questionIsLive = data.status === "open" || data.status === "closed";
 
                 // The prepared question text, if the admin launched one
                 const nextQuestionText = typeof data.question === "string" ? data.question : "";
@@ -74,6 +81,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     initSwarm(data.options);
                     listenToAnswers(data.active_question_id);
                 }
+
+                updateOverlayVisibility();
             }
         });
 
@@ -83,13 +92,10 @@ document.addEventListener("DOMContentLoaded", () => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 
-                // Toggle visibility based on the 'reveal' boolean
-                // We also check currentQuestionId to ensure a poll is actually loaded
-                if (data.reveal && currentQuestionId) {
-                    overlay.style.visibility = "visible";
-                } else {
-                    overlay.style.visibility = "hidden";
-                }
+                // The 'reveal' boolean only concerns the vote bubbles: the answer
+                // options themselves stay up for the whole question.
+                revealResults = data.reveal === true;
+                updateOverlayVisibility();
 
                 // Show/hide the question text (independent of the results)
                 showQuestion = data.showQuestion === true;
@@ -131,11 +137,20 @@ document.addEventListener("DOMContentLoaded", () => {
         root.style.setProperty('--sp-question-size', style.questionSize || "2.6rem");
     }
 
-    // 4b. The prepared question banner
+    // 4b. Who is on screen, and when.
+    // Both layers keep their size while hidden (visibility, not display), so the
+    // swarm can still be laid out against the SVG's real dimensions.
+    function updateOverlayVisibility() {
+        const hasQuestion = isAdmin && currentQuestionId;
+        chart.style.visibility = (hasQuestion && revealResults) ? "visible" : "hidden";
+        labelLayer.style.visibility = (hasQuestion && questionIsLive) ? "visible" : "hidden";
+    }
+
+    // 4c. The prepared question banner
     function renderQuestion(text) {
         questionBanner.replaceChildren();
         if (!text) return;
-        questionBanner.appendChild(buildOutlinedMath(text).outlined);
+        questionBanner.appendChild(buildOutlinedMath(text));
     }
 
     function updateQuestionVisibility() {
@@ -145,7 +160,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // 5. D3 Physics & Drawing Logic
     function initSwarm(options) {
         if (simulation) simulation.stop();
-        currentOptions = options;
         nodes = [];
 
         const svg = d3.select("#spChart");
@@ -198,7 +212,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Lay out one HTML label per option, centered on its column of bubbles.
     function drawLabels(options, xScale, y) {
         labelLayer.replaceChildren();
-        labelCounters = new Map();
 
         options.forEach(option => {
             const label = document.createElement('div');
@@ -206,19 +219,8 @@ document.addEventListener("DOMContentLoaded", () => {
             label.style.left = `${xScale(option)}px`;
             label.style.top = `${y}px`;
 
-            // Each layer of the outline carries its own copy of the tally.
-            const { outlined, layers } = buildOutlinedMath(option);
-            const counters = layers.map(layer => {
-                const counter = document.createElement('span');
-                counter.className = 'sp-label-count';
-                counter.textContent = " (0)";
-                layer.appendChild(counter);
-                return counter;
-            });
-
-            label.appendChild(outlined);
+            label.appendChild(buildOutlinedMath(option));
             labelLayer.appendChild(label);
-            labelCounters.set(option, counters);
         });
     }
 
@@ -227,17 +229,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         unsubscribeAnswers = onSnapshot(collection(db, "questions", questionId, "answers"), (snapshot) => {
             const newVotesMap = new Map();
-            const tallies = new Map(currentOptions.map(opt => [opt, 0]));
 
             snapshot.forEach(doc => {
-                const choice = doc.data().choice;
-                newVotesMap.set(doc.id, choice);
-                if (tallies.has(choice)) tallies.set(choice, tallies.get(choice) + 1);
-            });
-
-            currentOptions.forEach(opt => {
-                const counters = labelCounters.get(opt);
-                if (counters) counters.forEach(span => span.textContent = ` (${tallies.get(opt)})`);
+                newVotesMap.set(doc.id, doc.data().choice);
             });
 
             nodes = nodes.filter(n => newVotesMap.has(n.id));
@@ -289,14 +283,13 @@ function buildOutlinedMath(text) {
     const outlined = document.createElement('span');
     outlined.className = 'sp-outlined';
 
-    const layers = ['sp-outline-stroke', 'sp-outline-fill'].map(className => {
+    ['sp-outline-stroke', 'sp-outline-fill'].forEach(className => {
         const layer = document.createElement('span');
         layer.className = className;
         setMathText(layer, text);
         if (className === 'sp-outline-stroke') layer.setAttribute('aria-hidden', 'true');
         outlined.appendChild(layer);
-        return layer;
     });
 
-    return { outlined, layers };
+    return outlined;
 }

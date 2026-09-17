@@ -8,16 +8,16 @@ Schoen Poll is a static, Firebase-backed live polling system for lectures or pre
 - `clicker.html`: Alias that redirects to `index.html`.
 - `admin.html`: Admin remote. Google-authenticated admins launch prepared questions (from `config.js`) or plain option sets, show or hide the question text on the results page, close or reopen voting, reveal or hide results, show the QR code, add private history labels, simulate votes, adjust result bubble size, and select a results-page style. It listens to `state/live`, `state/display`, `questions/{questionId}`, and `questions/{questionId}/answers`.
 - `remote.html`: Alias that redirects to `admin.html`.
-- `results.html`: Projector/overlay page. It loads D3, the KaTeX stylesheet, `schoen-poll.js`, and `schoen-poll.css` to render the question and the live results. It listens to `state/live`, `state/display`, and `questions/{questionId}/answers`.
+- `results.html`: Projector/overlay page. It loads D3, the KaTeX stylesheet, `schoen-poll.js`, and `schoen-poll.css` to render the question, the answer options, and the live results. It listens to `state/live`, `state/display`, and `questions/{questionId}/answers`.
 - `history.html`: Admin-only history page. It reads past questions, shows their (typeset) question text, computes or reuses cached tallies, renders stacked result bars, lets admins edit private question labels, and can recalculate results or delete all questions from a given day. It reads `state/live`, `questions`, and each relevant `questions/{questionId}/answers` subcollection, but does not use live listeners.
 
 ## Shared Files
 
 - `config.js`: Firebase config, clicker URL used for the QR code, result bubble colors, prepared questions, preset answer-option buttons, and named results-page styles. Each results style defines its background, label and question appearance; the first style is the fallback.
 - `adminauth.js`: Shared Google admin authentication helper. It checks admin status by attempting to read the admin-only `state/display` document.
-- `schoen-poll.js`: Results overlay logic. It listens to Firestore state and answers, renders the question banner, then renders a D3 force simulation of answer bubbles. Answer labels are HTML overlaid on the SVG (not SVG text), so their LaTeX can be typeset.
+- `schoen-poll.js`: Results overlay logic. It listens to Firestore state and answers, renders the question banner, then renders a D3 force simulation of answer bubbles. Answer labels are HTML overlaid on the SVG (not SVG text), so their LaTeX can be typeset. The bubbles and the labels hide with `visibility` rather than `display`, so the SVG keeps its size for layout.
 - `mathtext.js`: Shared LaTeX helper. It exposes `setMathText` and `renderMath`. Math is written between `$...$` (inline) or `$$...$$` (displayed). KaTeX is imported dynamically, so a page still works (showing the LaTeX source) if the CDN is unreachable; text set before KaTeX arrives is typeset as soon as it loads.
-- `schoen-poll.css`: Styling for the results overlay, question banner, labels, QR modal, and unobtrusive login button. Outlined text is painted in two layers (stroke underneath, fill on top), since HTML has no `paint-order`.
+- `schoen-poll.css`: Styling for the results overlay, question banner, labels, QR modal, and unobtrusive login button. `#spChart` (bubbles) and `#spLabels` (options) start hidden and are shown independently by `schoen-poll.js`. Outlined text is painted in two layers (stroke underneath, fill on top), since HTML has no `paint-order`.
 - `README.md`: Setup and Firebase rules documentation.
 
 ## Firestore Shape
@@ -29,7 +29,7 @@ Schoen Poll is a static, Firebase-backed live polling system for lectures or pre
   - `question`: optional question text for the current question (absent when the admin launched a bare set of options). It may contain LaTeX. Publicly readable, so that clickers can show it.
   - `colorClickers`: optional admin-controlled boolean. When true, participant clickers color their page background according to the selected answer.
 - `state/display`
-  - `reveal`: whether the results overlay is visible.
+  - `reveal`: whether the vote bubbles are visible. The answer options are not affected: they stay on screen for as long as the question runs.
   - `showQuestion`: whether the question text is visible on the results page. Independent of `reveal`.
   - `showQR`: whether the QR code is visible.
   - `bubbleSize`: optional multiplier for result bubbles.
@@ -54,7 +54,7 @@ Schoen Poll is a static, Firebase-backed live polling system for lectures or pre
 5. Participants open `index.html`, sign in anonymously, listen to `state/live`, and see the question text (if any) and the active options, with their LaTeX typeset.
 6. Each participant writes their answer to `questions/{questionId}/answers/{userId}`.
 7. `admin.html` listens to those answers for the live doughnut chart and vote count.
-8. `results.html` listens to `state/live`, `state/display`, and answers. It applies the selected results style live, shows the question text while `showQuestion` is true, and when `reveal` is true, it shows D3 bubbles grouped by option. Launching a prepared question turns `showQuestion` on and `reveal` off, so the question goes up on the screen while the results stay hidden.
+8. `results.html` listens to `state/live`, `state/display`, and answers. It applies the selected results style live, shows the question text while `showQuestion` is true, shows the answer options for as long as the question is running (`status` is `open` or `closed`), and adds the D3 bubbles grouped by option when `reveal` is true. Launching a prepared question turns `showQuestion` on and `reveal` off, so the question and its options go up on the screen while the votes stay hidden. No vote counts are printed: the bubbles are the result.
 9. Revealing answers only changes their visibility. When the admin finishes a question, one batch clears its cached tallies, sets `state/live.status` to `complete`, and resets both `state/display.reveal` and `state/display.showQuestion` to false. Reopening or reactivating also clears cached tallies.
 10. `history.html` later reads questions and answers from the server, caches tallies (including zero votes) for questions that are no longer live, and displays grouped history by day. Each day's **Recalculate results** button bypasses its cached tallies and replaces them with a fresh count of the answers. Questions with zero votes have no result card, but their day remains available for recalculation and deletion.
 

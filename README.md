@@ -50,7 +50,9 @@ export const preparedQuestions = [
 ];
 ```
 
-They appear at the top of the admin remote's launchpad, above the usual question types. Launching one puts the question on the results page immediately, while the results stay hidden: the **Show question** / **Hide question** button on the remote toggles the text, and **Reveal answers** still toggles the bubbles, independently. Moving on to the next question hides both.
+They appear at the top of the admin remote's launchpad, above the usual question types. Launching one puts the question on the results page immediately, while the votes stay hidden: the **Show question** / **Hide question** button on the remote toggles the text, and **Reveal results** toggles the bubbles, independently. Moving on to the next question hides both.
+
+The answer options themselves are always displayed on the results page while a question is running, so that the room can read them off the big screen and not only off their phones. The vote counts are not printed anywhere on that page: the bubbles are the result.
 
 Both the question text and the answer options can contain LaTeX, written between `$...$` (inline) or `$$...$$` (displayed). It is typeset with [KaTeX](https://katex.org) (loaded from a CDN, like D3) on the results page, on the participants' clicker buttons, on the remote, and in the history. The only exception is the doughnut chart on the remote: it is drawn on a canvas by Chart.js, which shows the raw text.
 
