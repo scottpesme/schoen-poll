@@ -48,6 +48,70 @@ export const preparedQuestions = [
             String.raw`$x^x$`
         ],
         label: "Derivative of x^x"
+    },
+    {
+        question: "Did everyone manage to connect to the poll?",
+        options: ['Yes', 'No'],
+        label: "Warm-up"
+    },
+    {
+        question: String.raw`Let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite and let $x_k$ be the iterates of gradient descent on $f(x) = \tfrac{1}{2} x^\top A x - b^\top x$ with a fixed step size $1/L$. Does $x_k$ converge for every starting point $x_0$?`,
+        options: ['Yes, always', 'Only if $A$ is invertible', 'No'],
+        label: "Long question, gradient descent"
+    },
+    {
+        question: String.raw`Which value does this limit take? $$\lim_{n \to \infty} \left( 1 + \frac{x}{n} \right)^n$$`,
+        options: [String.raw`$1$`, String.raw`$e^x$`, String.raw`$x$`, String.raw`$+\infty$`],
+        label: "Display math limit"
+    },
+    {
+        question: String.raw`The matrix $\begin{pmatrix} 1 & 2 \\ 2 & 4 \end{pmatrix}$ is invertible.`,
+        options: ['True', 'False'],
+        label: "Singular matrix"
+    },
+    {
+        question: String.raw`If $f$ is differentiable and $f'(x_0) = 0$, then $x_0$ is a local minimum of $f$.`,
+        options: ['True', 'False', 'Unsure'],
+        label: "Critical points"
+    },
+    {
+        question: String.raw`Quelle est la dérivée de $\ln(x^2)$ ?`,
+        options: [String.raw`$\frac{1}{x^2}$`, String.raw`$\frac{2}{x}$`, String.raw`$\frac{2}{x^2}$`, String.raw`$2 \ln x$`],
+        label: "En francais"
+    },
+    {
+        question: String.raw`How many eigenvalues (with multiplicity) does a real $5 \times 5$ matrix have in $\mathbb{C}$?`,
+        options: [String.raw`$5$`, String.raw`$\leq 5$`, String.raw`It depends on the matrix`],
+        label: "Counting eigenvalues"
+    },
+    {
+        question: String.raw`Is $\{(x, y) \in \mathbb{R}^2 : xy = 1\}$ a smooth manifold?`,
+        options: ['Yes', 'No'],
+        label: "Hyperbola manifold"
+    },
+    {
+        question: String.raw`Rank these in increasing order of growth as $n \to \infty$: $n \log n$, $n^{1.1}$, $2^{\log_2 n}$.`,
+        options: [
+            String.raw`$2^{\log_2 n} < n \log n < n^{1.1}$`,
+            String.raw`$n \log n < 2^{\log_2 n} < n^{1.1}$`,
+            String.raw`$2^{\log_2 n} < n^{1.1} < n \log n$`
+        ],
+        label: "Long options, growth rates"
+    },
+    {
+        question: "Shall we take a five-minute break?",
+        options: ['Yes, please', 'No, keep going'],
+        label: "Break?"
+    },
+    {
+        question: String.raw`What is $w \mapsto w^\top A x$ equal to?`,
+        options: [
+            String.raw`$\sum_{i, j = 1}^d A_{ij} w_i w_j$`,
+            String.raw`$\sum_{i=1}^d A_{ij} w_i w_j$`,
+            String.raw`$|| A w ||^2$`,
+            "I don't know"
+        ],
+        label: "Q6"
     }
 ];
 
