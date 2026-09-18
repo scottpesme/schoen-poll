@@ -7,8 +7,10 @@
 // Loaded dynamically, and deliberately not awaited: if the CDN is unreachable
 // (flaky lecture-hall Wi-Fi), pages keep working and simply show the LaTeX
 // source instead of breaking on a failed import.
+// `mathReady` settles once KaTeX is in (or has failed to come in): callers that
+// need to measure typeset text can wait on it.
 let renderMathInElement = null;
-const katexReady = import("https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.mjs")
+export const mathReady = import("https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.mjs")
     .then((module) => { renderMathInElement = module.default; })
     .catch((error) => console.error("KaTeX could not be loaded; showing LaTeX source instead.", error));
 
@@ -43,7 +45,7 @@ export function renderMath(element) {
 
     if (!renderMathInElement) {
         // Still loading: the raw text stays visible, and is typeset on arrival.
-        katexReady.then(() => typeset(element));
+        mathReady.then(() => typeset(element));
         return element;
     }
 

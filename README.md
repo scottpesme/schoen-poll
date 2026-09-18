@@ -54,6 +54,8 @@ They appear at the top of the admin remote's launchpad, above the usual question
 
 The answer options themselves are always displayed on the results page while a question is running, so that the room can read them off the big screen and not only off their phones. The vote counts are not printed anywhere on that page: the bubbles are the result.
 
+Long answers look after themselves: each label is confined to its own column and to the screen, ordinary text wraps, and if a formula is still too wide, every label shrinks by the same factor until the widest one fits. Four long answers on a narrow window will therefore come out small. If you want more room for the outermost two, widen the side margins in `initSwarm` (`schoen-poll.js`): `marginFactor` is `0.10` for four or more options, and raising it pulls the outer columns away from the edges.
+
 Both the question text and the answer options can contain LaTeX, written between `$...$` (inline) or `$$...$$` (displayed). It is typeset with [KaTeX](https://katex.org) (loaded from a CDN, like D3) on the results page, on the participants' clicker buttons, on the remote, and in the history. The only exception is the doughnut chart on the remote: it is drawn on a canvas by Chart.js, which shows the raw text.
 
 In `config.js`, prefer ``String.raw`...` `` as above, so that backslashes can be written normally. With ordinary quotes, every backslash must be doubled: `"Is $\\pi$ rational?"`.

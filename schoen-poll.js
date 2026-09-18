@@ -3,7 +3,7 @@ import { getFirestore, doc, onSnapshot, collection } from "https://www.gstatic.c
 
 import { firebaseConfig, clickerUrl, colors, resultStyles } from "./config.js";
 import { initAdminAuth } from "./adminauth.js";
-import { setMathText } from "./mathtext.js";
+import { setMathText, mathReady } from "./mathtext.js";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -22,6 +22,7 @@ let showQuestion = false;
 let isAdmin = false;        // an admin is logged in on this screen
 let revealResults = false;  // the admin revealed the vote bubbles
 let questionIsLive = false; // a question is running (not finished)
+let labelGeneration = 0;    // guards late re-fits from an earlier question
 
 // 3. Wait for the DOM to load before grabbing elements
 document.addEventListener("DOMContentLoaded", () => {
@@ -187,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Draw classy text labels at the bottom.
         // They are HTML overlaid on the SVG (1:1 with its pixels), so that
         // LaTeX in the options can be typeset.
-        drawLabels(options, xScale, 0.75 * height);
+        drawLabels(options, xScale, 0.75 * height, width);
 
         simulation = d3.forceSimulation(nodes)
             .force("x", d3.forceX(d => xScale(d.choice)).strength(0.10))
@@ -210,18 +211,71 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Lay out one HTML label per option, centered on its column of bubbles.
-    function drawLabels(options, xScale, y) {
+    // Long answers are the tricky case: plain text wraps inside its column, but
+    // a formula is one unbreakable block, so the labels also shrink to fit.
+    function drawLabels(options, xScale, y, width) {
         labelLayer.replaceChildren();
+        labelLayer.style.removeProperty('--sp-label-scale');
+        const generation = ++labelGeneration;
 
-        options.forEach(option => {
+        const positions = options.map(option => xScale(option));
+
+        // Room for one label: its share of the width, minus a gap to its
+        // neighbour, and never wider than twice its distance to the nearest edge
+        // of the screen (the label is centered on its column, so that is what
+        // keeps it from running off, left or right).
+        const gap = 40;
+        const columnWidth = positions.length > 1
+            ? Math.min(...positions.slice(1).map((x, index) => x - positions[index]))
+            : width;
+
+        const labels = options.map((option, index) => {
+            const x = positions[index];
+            const room = Math.max(120, Math.min(columnWidth, 2 * Math.min(x, width - x)) - gap);
+
+            // Give the box its column outright, rather than centering it on x with
+            // a transform: an auto-width absolute box only gets the room between
+            // its left edge and the screen, which starves the right-hand labels.
             const label = document.createElement('div');
             label.className = 'sp-label';
-            label.style.left = `${xScale(option)}px`;
+            label.style.left = `${Math.max(0, Math.min(x - room / 2, width - room))}px`;
             label.style.top = `${y}px`;
-
+            label.style.width = `${room}px`;
             label.appendChild(buildOutlinedMath(option));
             labelLayer.appendChild(label);
+
+            return { label, room };
         });
+
+        const fit = () => fitLabels(labels, generation);
+
+        // Fit now, then again once the math is typeset, then once more when its
+        // fonts have loaded: each step changes how wide a label is.
+        fit();
+        mathReady
+            .then(fit)
+            .then(() => document.fonts && document.fonts.ready)
+            .then(fit);
+    }
+
+    // Shrink every label by the same factor, so that the widest formula fits its
+    // column. One factor for all of them keeps the row looking deliberate.
+    function fitLabels(labels, generation) {
+        if (generation !== labelGeneration) return; // a newer question took over
+
+        labelLayer.style.removeProperty('--sp-label-scale');
+
+        let scale = 1;
+        labels.forEach(({ label, room }) => {
+            // Typeset math cannot wrap, so it is what may overflow. Plain text
+            // wraps inside `room` on its own and needs no measuring.
+            label.querySelectorAll('.sp-outline-fill .katex').forEach((formula) => {
+                const formulaWidth = formula.getBoundingClientRect().width;
+                if (formulaWidth > room) scale = Math.min(scale, room / formulaWidth);
+            });
+        });
+
+        if (scale < 1) labelLayer.style.setProperty('--sp-label-scale', Math.max(scale, 0.35));
     }
 
     function listenToAnswers(questionId) {

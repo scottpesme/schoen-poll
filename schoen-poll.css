@@ -30,18 +30,23 @@
     overflow: visible;
     visibility: hidden;
     pointer-events: none; /* Dots can be clicked "through" labels */
+
+    /* Set by schoen-poll.js when the answers are too wide for their columns:
+       all the labels then shrink together, outline included. */
+    --sp-label-scale: 1;
 }
 .sp-label {
     position: absolute;
-    transform: translate(-50%, -100%); /* x is the center, y is the baseline */
-    white-space: nowrap;
+    transform: translateY(-100%); /* y is the bottom line; the column is placed by schoen-poll.js */
+    text-align: center;
+    overflow-wrap: break-word;         /* a very long word breaks rather than overflows */
     line-height: 1.15;
-    font-size: var(--sp-label-size, 3.5rem);
+    font-size: calc(var(--sp-label-size, 3.5rem) * var(--sp-label-scale, 1));
     font-weight: 700;
     color: var(--sp-label-color, #2c3e50);
     font-family: Palatino Linotype, Book Antiqua, Palatino, FreeSerif, serif; /* Maybe removing this makes it inherit the style from container? */
     --sp-outline-color: var(--sp-label-outline-color, white);
-    --sp-outline-width: var(--sp-label-outline-width, 15px);
+    --sp-outline-width: calc(var(--sp-label-outline-width, 15px) * var(--sp-label-scale, 1));
 }
 /* The prepared question, shown at the top of the screen.
    Toggled separately from the results by the admin remote. */
