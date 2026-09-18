@@ -173,6 +173,10 @@
         /* The Show / Hide Question Button */
         #showQuestionBtn { background: #1a365d; color: white; padding: 12px 8px; min-height: 48px; font-size: 1rem; transition: background 0.2s; }
         #showQuestionBtn.active-state { background: #64748b; }
+
+        /* The Correct Answer Button */
+        #showAnswerBtn { background: #099869; color: white; padding: 12px 8px; min-height: 48px; font-size: 1rem; transition: background 0.2s; }
+        #showAnswerBtn.active-state { background: #64748b; }
         
         /* The Close / Re-open Button */
         #toggleOpenCloseBtn { background: #334155; color: white; padding: 14px 8px; min-height: 58px; font-size: 1rem; line-height: 1.15; transition: background 0.2s; }
@@ -284,6 +288,7 @@
                 <button id="toggleOpenCloseBtn">Stop taking answers</button>
                 <button id="revealBtn">Reveal results</button>
                 <button id="showQuestionBtn" class="span-2 hidden">Show question on screen</button>
+                <button id="showAnswerBtn" class="span-2 hidden">Reveal the correct answer</button>
             </div>
 
             <button id="finishBtn" class="hollow-btn">Move on to the next question</button>
@@ -355,6 +360,7 @@
         const preparedList = document.getElementById('preparedList');
         const currentQuestionText = document.getElementById('currentQuestionText');
         const showQuestionBtn = document.getElementById('showQuestionBtn');
+        const showAnswerBtn = document.getElementById('showAnswerBtn');
 
         // State Variables
         let currentLiveState = {};
@@ -528,6 +534,7 @@
                     }
 
                     updateShowQuestionButton();
+                    updateShowAnswerButton();
 
                     // Update QR Toggle UI
                     if (currentDisplayState.showQR) {
@@ -558,6 +565,17 @@
             currentQuestionText.classList.toggle('hidden', !questionText);
             showQuestionBtn.classList.toggle('hidden', !questionText);
             updateShowQuestionButton();
+        }
+
+        // The correct answer lives in state/display, which only admins can read:
+        // state/live would put it within reach of every clicker.
+        function updateShowAnswerButton() {
+            const correctAnswer = typeof currentDisplayState.correctAnswer === "string" ? currentDisplayState.correctAnswer : "";
+            showAnswerBtn.classList.toggle('hidden', correctAnswer.length === 0);
+
+            const isShowing = currentDisplayState.showAnswer === true;
+            showAnswerBtn.innerText = isShowing ? "Hide the correct answer" : "Reveal the correct answer";
+            showAnswerBtn.classList.toggle('active-state', isShowing);
         }
 
         function updateShowQuestionButton() {
@@ -731,12 +749,15 @@
 
         // --- CORE ACTIONS ---
 
-        async function launchQuestion(optionsArray, rawQuestion = "", rawLabel = "") {
+        // `prepared` is an entry of preparedQuestions, or nothing at all for the
+        // plain option-set buttons.
+        async function launchQuestion(optionsArray, prepared = {}) {
             if (!optionsArray || optionsArray.length === 0) return;
 
-            const questionText = typeof rawQuestion === "string" ? rawQuestion.trim() : "";
+            const questionText = typeof prepared.question === "string" ? prepared.question.trim() : "";
             // The optional private label, kept separate from the question text.
-            const label = typeof rawLabel === "string" ? rawLabel.trim() : "";
+            const label = typeof prepared.label === "string" ? prepared.label.trim() : "";
+            const correctAnswer = resolveCorrectAnswer(prepared.answer, optionsArray);
 
             try {
                 const questionRef = await addDoc(collection(db, "questions"), {
@@ -755,16 +776,35 @@
                 }, { merge: true });
 
                 // Reset the display state for the new question, preserving other states (QR).
-                // A prepared question goes up on the screen right away; the results do not.
+                // A prepared question goes up on the screen right away; the results do not,
+                // and neither does the correct answer.
                 await setDoc(doc(db, "state", "display"), {
                     reveal: false,
-                    showQuestion: questionText.length > 0
+                    showQuestion: questionText.length > 0,
+                    showAnswer: false,
+                    correctAnswer: correctAnswer || deleteField()
                 }, { merge: true });
 
             } catch (error) {
                 console.error("Error launching:", error);
                 statusText.innerText = "Launch failed.";
             }
+        }
+
+        // Which option is the correct one: `answer` is either its text, or its
+        // position in the list counting from 1.
+        function resolveCorrectAnswer(answer, optionsArray) {
+            if (typeof answer === "number") {
+                const option = optionsArray[answer - 1];
+                if (option) return option;
+            } else if (typeof answer === "string" && optionsArray.includes(answer.trim())) {
+                return answer.trim();
+            } else if (answer === undefined || answer === null) {
+                return ""; // no correct answer declared: nothing to reveal
+            }
+
+            console.warn("Prepared question: `answer` matches none of its options.", answer, optionsArray);
+            return "";
         }
 
         // Mode 1: Launch Buttons
@@ -813,7 +853,7 @@
             btn.appendChild(optionsLine);
 
             btn.addEventListener('click', () => {
-                launchQuestion(prepared.options, prepared.question, prepared.label);
+                launchQuestion(prepared.options, prepared);
             });
 
             preparedList.appendChild(btn);
@@ -863,6 +903,14 @@
             }, { merge: true });
         });
 
+        showAnswerBtn.addEventListener('click', async () => {
+            if (!currentDisplayState.correctAnswer) return;
+
+            await setDoc(doc(db, "state", "display"), {
+                showAnswer: !currentDisplayState.showAnswer
+            }, { merge: true });
+        });
+
         // Status Toggle - Writes to state/live
         toggleOpenCloseBtn.addEventListener('click', async () => {
             if (!currentLiveState.active_question_id) return; 
@@ -899,7 +947,8 @@
                 }, { merge: true });
                 batch.set(doc(db, "state", "display"), {
                     reveal: false,
-                    showQuestion: false
+                    showQuestion: false,
+                    showAnswer: false
                 }, { merge: true });
                 await batch.commit();
             } catch (error) {

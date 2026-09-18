@@ -24,6 +24,9 @@ export const colors = ["#4C72B0", "#55A868", "#8172B2", "#64B5CD", "#CCB974", "#
 // Each entry accepts:
 //   question: the text shown on the results page and on the clickers (optional),
 //   options:  the answer buttons (required),
+//   answer:   the correct answer (optional), either its text or its position in
+//             the list, counting from 1. The admin remote can then box it on the
+//             results page. It is never sent to the clickers.
 //   label:    a private label for the history page (optional; defaults to the question).
 //
 // Both `question` and `options` support LaTeX: write inline math between $...$
@@ -33,11 +36,13 @@ export const preparedQuestions = [
     {
         question: String.raw`Is $\sum_{n=1}^{\infty} \frac{1}{n}$ convergent?`,
         options: ['Yes', 'No', 'Unsure'],
+        answer: 'No',
         label: "Harmonic series"
     },
     {
         question: String.raw`Every continuous $f : [0,1] \to \mathbb{R}$ is bounded.`,
-        options: ['True', 'False']
+        options: ['True', 'False'],
+        answer: 'True'
     },
     {
         question: String.raw`What is $\frac{d}{dx} \left( x^x \right)$?`,
@@ -47,6 +52,7 @@ export const preparedQuestions = [
             String.raw`$x^x (1 + \ln x)$`,
             String.raw`$x^x$`
         ],
+        answer: 3,                       // the third option
         label: "Derivative of x^x"
     },
     {
@@ -57,36 +63,43 @@ export const preparedQuestions = [
     {
         question: String.raw`Let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite and let $x_k$ be the iterates of gradient descent on $f(x) = \tfrac{1}{2} x^\top A x - b^\top x$ with a fixed step size $1/L$. Does $x_k$ converge for every starting point $x_0$?`,
         options: ['Yes, always', 'Only if $A$ is invertible', 'No'],
+        answer: 1,
         label: "Long question, gradient descent"
     },
     {
         question: String.raw`Which value does this limit take? $$\lim_{n \to \infty} \left( 1 + \frac{x}{n} \right)^n$$`,
         options: [String.raw`$1$`, String.raw`$e^x$`, String.raw`$x$`, String.raw`$+\infty$`],
+        answer: 2,
         label: "Display math limit"
     },
     {
         question: String.raw`The matrix $\begin{pmatrix} 1 & 2 \\ 2 & 4 \end{pmatrix}$ is invertible.`,
         options: ['True', 'False'],
+        answer: 'False',
         label: "Singular matrix"
     },
     {
         question: String.raw`If $f$ is differentiable and $f'(x_0) = 0$, then $x_0$ is a local minimum of $f$.`,
         options: ['True', 'False', 'Unsure'],
+        answer: 'False',
         label: "Critical points"
     },
     {
         question: String.raw`Quelle est la dérivée de $\ln(x^2)$ ?`,
         options: [String.raw`$\frac{1}{x^2}$`, String.raw`$\frac{2}{x}$`, String.raw`$\frac{2}{x^2}$`, String.raw`$2 \ln x$`],
+        answer: 2,
         label: "En francais"
     },
     {
         question: String.raw`How many eigenvalues (with multiplicity) does a real $5 \times 5$ matrix have in $\mathbb{C}$?`,
         options: [String.raw`$5$`, String.raw`$\leq 5$`, String.raw`It depends on the matrix`],
+        answer: 1,
         label: "Counting eigenvalues"
     },
     {
         question: String.raw`Is $\{(x, y) \in \mathbb{R}^2 : xy = 1\}$ a smooth manifold?`,
         options: ['Yes', 'No'],
+        answer: 'Yes',
         label: "Hyperbola manifold"
     },
     {
@@ -96,6 +109,7 @@ export const preparedQuestions = [
             String.raw`$n \log n < 2^{\log_2 n} < n^{1.1}$`,
             String.raw`$2^{\log_2 n} < n^{1.1} < n \log n$`
         ],
+        answer: 1,
         label: "Long options, growth rates"
     },
     {
@@ -135,6 +149,7 @@ export const presetButtons = [
 // They are selectable under the advanced admin tools (admin remote).
 // The first style is the fallback when no valid style is selected.
 // questionColor / questionSize style the prepared question shown at the top.
+// correctColor is the box drawn around the correct answer when it is revealed.
 export const resultStyles = [
     {
         id: "none",
@@ -145,7 +160,8 @@ export const resultStyles = [
         labelOutlineColor: "#ffffff",
         labelOutlineWidth: 15,
         questionColor: "#2c3e50",
-        questionSize: "2.6rem"
+        questionSize: "2.6rem",
+        correctColor: "#099869"
     },
     {
         id: "white-bg",
@@ -156,7 +172,8 @@ export const resultStyles = [
         labelOutlineColor: "#ffffff",
         labelOutlineWidth: 15,
         questionColor: "#2c3e50",
-        questionSize: "2.6rem"
+        questionSize: "2.6rem",
+        correctColor: "#099869"
     },
     {
         id: "black-bg",
@@ -167,6 +184,7 @@ export const resultStyles = [
         labelOutlineColor: "#000000",
         labelOutlineWidth: 15,
         questionColor: "#ffffff",
-        questionSize: "2.6rem"
+        questionSize: "2.6rem",
+        correctColor: "#2ee59d"
     }
 ];

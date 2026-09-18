@@ -45,12 +45,17 @@ export const preparedQuestions = [
     {
         question: String.raw`Is $\sum_{n=1}^{\infty} \frac{1}{n}$ convergent?`,
         options: ['Yes', 'No', 'Unsure'],
+        answer: 'No',
         label: "Harmonic series"
     }
 ];
 ```
 
-They appear at the top of the admin remote's launchpad, above the usual question types. Launching one puts the question on the results page immediately, while the votes stay hidden: the **Show question** / **Hide question** button on the remote toggles the text, and **Reveal results** toggles the bubbles, independently. Moving on to the next question hides both.
+The optional `answer` field marks the correct option, written either as its text (`answer: 'No'`) or as its position in the list, counting from 1 (`answer: 2`). The remote then offers a **Reveal the correct answer** button, which draws a box around that answer on the results page; the votes stay exactly where they are, so the room can see at a glance how it went. Questions without an `answer` simply have no such button.
+
+The correct answer is stored in `state/display`, which only admins can read, and never in `state/live`: a participant who opened the browser console could otherwise read it off the clicker before you reveal it.
+
+They appear at the top of the admin remote's launchpad, above the usual question types. Launching one puts the question on the results page immediately, while the votes stay hidden: the **Show question** / **Hide question** button on the remote toggles the text, **Reveal results** toggles the bubbles, and **Reveal the correct answer** boxes the right one, each independently of the others. Moving on to the next question hides all three.
 
 The answer options themselves are always displayed on the results page while a question is running, so that the room can read them off the big screen and not only off their phones. The vote counts are not printed anywhere on that page: the bubbles are the result.
 

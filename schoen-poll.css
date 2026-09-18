@@ -71,8 +71,9 @@
 
 /* Outlined text: the same content is painted twice, once as a thick stroke
    underneath and once as the fill on top. This mimics SVG's paint-order:stroke,
-   which is not available for HTML text. */
-.sp-outlined { position: relative; display: block; }
+   which is not available for HTML text. It is inline-block so that the box drawn
+   around a correct answer hugs the text instead of spanning the whole column. */
+.sp-outlined { position: relative; display: inline-block; vertical-align: bottom; }
 .sp-outlined > .sp-outline-stroke {
     position: absolute;
     inset: 0;
@@ -80,6 +81,14 @@
     user-select: none;
 }
 .sp-outlined > .sp-outline-fill { position: relative; }
+
+/* The correct answer, once the admin reveals it. An outline rather than a
+   border: it is drawn outside the box, so nothing moves when it appears. */
+.sp-label.sp-correct > .sp-outlined {
+    outline: 0.1em solid var(--sp-correct-color, #099869);
+    outline-offset: 0.12em;
+    border-radius: 0.2em;
+}
 
 /* Kept for backwards compatibility with setups that still draw SVG labels. */
 #spChart .label {

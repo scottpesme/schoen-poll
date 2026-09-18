@@ -23,6 +23,9 @@ let isAdmin = false;        // an admin is logged in on this screen
 let revealResults = false;  // the admin revealed the vote bubbles
 let questionIsLive = false; // a question is running (not finished)
 let labelGeneration = 0;    // guards late re-fits from an earlier question
+let labelElements = new Map(); // option -> its label element
+let correctAnswer = "";     // the option the admin declared correct, if any
+let showAnswer = false;     // the admin revealed it
 
 // 3. Wait for the DOM to load before grabbing elements
 document.addEventListener("DOMContentLoaded", () => {
@@ -102,6 +105,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 showQuestion = data.showQuestion === true;
                 updateQuestionVisibility();
 
+                // Box the correct answer, leaving the votes where they are
+                correctAnswer = typeof data.correctAnswer === "string" ? data.correctAnswer : "";
+                showAnswer = data.showAnswer === true;
+                updateAnswerHighlight();
+
                 // Show/hide the QR code
                 if (data.showQR) {
                     // Generate the QR code URL using the API
@@ -136,6 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
         root.style.setProperty('--sp-label-outline-width', `${style.labelOutlineWidth}px`);
         root.style.setProperty('--sp-question-color', style.questionColor || style.labelColor);
         root.style.setProperty('--sp-question-size', style.questionSize || "2.6rem");
+        root.style.setProperty('--sp-correct-color', style.correctColor || "#099869");
     }
 
     // 4b. Who is on screen, and when.
@@ -147,7 +156,14 @@ document.addEventListener("DOMContentLoaded", () => {
         labelLayer.style.visibility = (hasQuestion && questionIsLive) ? "visible" : "hidden";
     }
 
-    // 4c. The prepared question banner
+    // 4c. The box around the correct answer
+    function updateAnswerHighlight() {
+        labelElements.forEach((label, option) => {
+            label.classList.toggle('sp-correct', showAnswer && option === correctAnswer);
+        });
+    }
+
+    // 4d. The prepared question banner
     function renderQuestion(text) {
         questionBanner.replaceChildren();
         if (!text) return;
@@ -216,6 +232,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function drawLabels(options, xScale, y, width) {
         labelLayer.replaceChildren();
         labelLayer.style.removeProperty('--sp-label-scale');
+        labelElements = new Map();
         const generation = ++labelGeneration;
 
         const positions = options.map(option => xScale(option));
@@ -243,9 +260,12 @@ document.addEventListener("DOMContentLoaded", () => {
             label.style.width = `${room}px`;
             label.appendChild(buildOutlinedMath(option));
             labelLayer.appendChild(label);
+            labelElements.set(option, label);
 
             return { label, room };
         });
+
+        updateAnswerHighlight(); // the new question may already have one revealed
 
         const fit = () => fitLabels(labels, generation);
 
