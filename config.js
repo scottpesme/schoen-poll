@@ -34,6 +34,11 @@ export const colors = ["#4C72B0", "#55A868", "#8172B2", "#64B5CD", "#CCB974", "#
 // backslashes do not need to be escaped; with ordinary quotes, write "\\pi".
 export const preparedQuestions = [
     {
+        question: "Is this polling system working for you?",
+        options: ['Yes', 'No'],
+        label: "Q0"
+    },
+    {
         question: "Will AI have beneficial impacts on our society?",
         options: ['Yes for sure', 'Probably', "I don't think so", 'Absolutely not'],
         label: "Q1"
