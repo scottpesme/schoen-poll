@@ -34,88 +34,46 @@ export const colors = ["#4C72B0", "#55A868", "#8172B2", "#64B5CD", "#CCB974", "#
 // backslashes do not need to be escaped; with ordinary quotes, write "\\pi".
 export const preparedQuestions = [
     {
-        question: String.raw`Is $\sum_{n=1}^{\infty} \frac{1}{n}$ convergent?`,
-        options: ['Yes', 'No', 'Unsure'],
-        answer: 'No',
-        label: "Harmonic series"
+        question: "Will AI have beneficial impacts on our society?",
+        options: ['Yes for sure', 'Probably', "I don't think so", 'Absolutely not'],
+        label: "Q1"
     },
     {
-        question: String.raw`Every continuous $f : [0,1] \to \mathbb{R}$ is bounded.`,
-        options: ['True', 'False'],
-        answer: 'True'
-    },
-    {
-        question: String.raw`What is $\frac{d}{dx} \left( x^x \right)$?`,
+        question: "The amount of text read by ChatGPT amounts to",
         options: [
-            String.raw`$x \, x^{x-1}$`,
-            String.raw`$x^x \ln x$`,
-            String.raw`$x^x (1 + \ln x)$`,
-            String.raw`$x^x$`
+            '10 copies of War and Peace',
+            String.raw`$10^{7}$ copies of War and Peace`,
+            String.raw`$10^{10}$ copies of War and Peace`,
+            String.raw`$10^{100}$ copies of War and Peace`
         ],
-        answer: 3,                       // the third option
-        label: "Derivative of x^x"
-    },
-    {
-        question: "Did everyone manage to connect to the poll?",
-        options: ['Yes', 'No'],
-        label: "Warm-up"
-    },
-    {
-        question: String.raw`Let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite and let $x_k$ be the iterates of gradient descent on $f(x) = \tfrac{1}{2} x^\top A x - b^\top x$ with a fixed step size $1/L$. Does $x_k$ converge for every starting point $x_0$?`,
-        options: ['Yes, always', 'Only if $A$ is invertible', 'No'],
-        answer: 1,
-        label: "Long question, gradient descent"
-    },
-    {
-        question: String.raw`Which value does this limit take? $$\lim_{n \to \infty} \left( 1 + \frac{x}{n} \right)^n$$`,
-        options: [String.raw`$1$`, String.raw`$e^x$`, String.raw`$x$`, String.raw`$+\infty$`],
         answer: 2,
-        label: "Display math limit"
+        label: "Q2"
     },
     {
-        question: String.raw`The matrix $\begin{pmatrix} 1 & 2 \\ 2 & 4 \end{pmatrix}$ is invertible.`,
+        question: "The human brain has more connections than ChatGPT has weights?",
         options: ['True', 'False'],
-        answer: 'False',
-        label: "Singular matrix"
+        answer: 'True',
+        label: "Q3"
     },
     {
-        question: String.raw`If $f$ is differentiable and $f'(x_0) = 0$, then $x_0$ is a local minimum of $f$.`,
-        options: ['True', 'False', 'Unsure'],
-        answer: 'False',
-        label: "Critical points"
-    },
-    {
-        question: String.raw`Quelle est la dérivée de $\ln(x^2)$ ?`,
-        options: [String.raw`$\frac{1}{x^2}$`, String.raw`$\frac{2}{x}$`, String.raw`$\frac{2}{x^2}$`, String.raw`$2 \ln x$`],
-        answer: 2,
-        label: "En francais"
-    },
-    {
-        question: String.raw`How many eigenvalues (with multiplicity) does a real $5 \times 5$ matrix have in $\mathbb{C}$?`,
-        options: [String.raw`$5$`, String.raw`$\leq 5$`, String.raw`It depends on the matrix`],
-        answer: 1,
-        label: "Counting eigenvalues"
-    },
-    {
-        question: String.raw`Is $\{(x, y) \in \mathbb{R}^2 : xy = 1\}$ a smooth manifold?`,
-        options: ['Yes', 'No'],
-        answer: 'Yes',
-        label: "Hyperbola manifold"
-    },
-    {
-        question: String.raw`Rank these in increasing order of growth as $n \to \infty$: $n \log n$, $n^{1.1}$, $2^{\log_2 n}$.`,
+        question: "Machines will one day be conscious",
         options: [
-            String.raw`$2^{\log_2 n} < n \log n < n^{1.1}$`,
-            String.raw`$n \log n < 2^{\log_2 n} < n^{1.1}$`,
-            String.raw`$2^{\log_2 n} < n^{1.1} < n \log n$`
+            'Probably',
+            "I don't think so",
+            'Stupid question, machines cannot be conscious by definition'
         ],
-        answer: 1,
-        label: "Long options, growth rates"
+        label: "Q4"
     },
     {
-        question: "Shall we take a five-minute break?",
-        options: ['Yes, please', 'No, keep going'],
-        label: "Break?"
+        question: String.raw`What is the gradient of $w \mapsto \langle w, x \rangle$?`,
+        options: [
+            String.raw`$w$`,
+            String.raw`$x$`,
+            String.raw`$w + x$`,
+            "What's a gradient?"
+        ],
+        answer: 2,
+        label: "Q5"
     },
     {
         question: String.raw`What is $w \mapsto w^\top A x$ equal to?`,
@@ -126,6 +84,52 @@ export const preparedQuestions = [
             "I don't know"
         ],
         label: "Q6"
+    },
+    {
+        question: String.raw`What is the gradient of $w \mapsto w^\top A w$?`,
+        options: [
+            String.raw`$A w$`,
+            String.raw`$2 A w$`,
+            String.raw`$(A + A^\top) w$`,
+            "Still don't know what a gradient is"
+        ],
+        answer: 3,
+        label: "Q7"
+    },
+    {
+        question: String.raw`$w \mapsto \Vert w \Vert^2$ is a convex function`,
+        options: ['True', 'False', "I don't know"],
+        answer: 'True',
+        label: "Q8"
+    },
+    {
+        question: String.raw`$w \mapsto w^\top A w$ is a convex function`,
+        options: ['True', 'False', "I don't know"],
+        answer: 'False',
+        label: "Q9"
+    },
+    {
+        question: String.raw`$w \mapsto \exp(w)$ is a convex function`,
+        options: ['True', 'False', "I don't know"],
+        answer: 'True',
+        label: "Q10"
+    },
+    {
+        question: String.raw`$w \mapsto \ln (w)$ is a convex function`,
+        options: ['True', 'False', "I don't know"],
+        answer: 'False',
+        label: "Q11"
+    },
+    {
+        question: String.raw`Suppose $f$ is convex and differentiable. Which minimal condition guarantees that $w^\star$ is a global minimiser?`,
+        options: [
+            String.raw`$\nabla f(w^\star) = 0$ (gradient = 0)`,
+            String.raw`$\nabla^2 f(w^\star) = 0$ (Hessian = 0)`,
+            String.raw`$\nabla f(w^\star) = 0$ AND $\nabla^2 f(w^\star) = 0$`,
+            "I don't know"
+        ],
+        answer: 1,
+        label: "Q12"
     }
 ];
 
