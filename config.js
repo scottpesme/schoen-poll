@@ -76,13 +76,14 @@ export const preparedQuestions = [
         label: "Q5"
     },
     {
-        question: String.raw`What is $w \mapsto w^\top A x$ equal to?`,
+        question: String.raw`What is $w \mapsto w^\top A w$ equal to?`,
         options: [
             String.raw`$\sum_{i, j = 1}^d A_{ij} w_i w_j$`,
             String.raw`$\sum_{i=1}^d A_{ij} w_i w_j$`,
             String.raw`$|| A w ||^2$`,
             "I don't know"
         ],
+        answer: 1,
         label: "Q6"
     },
     {
