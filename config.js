@@ -137,8 +137,8 @@ export const preparedQuestions = [
     //     answer: 1,
     //     label: "Q12"
     // }
-        {
-        question: "A convex function always has a global minimum"
+    {
+        question: "A convex function always has a global minimum",
         options: ['True', 'False'],
         answer: 'False',
         label: "Convex function and mimima"
