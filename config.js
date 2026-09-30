@@ -42,7 +42,7 @@ export const questionSets = [
 export const presetButtons = [
     ['Yes', 'No'],
     ['True', 'False'],
-    ['True', 'False', 'I don't know'],
+    ['True', 'False', "I don't know"],
     ['A', 'B', 'C', 'D']
 ];
 

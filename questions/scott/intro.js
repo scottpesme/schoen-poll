@@ -32,7 +32,7 @@ export default [
         question: "Machines will one day be conscious",
         options: [
             'Probably',
-            "I don't think so",
+            'I don't think so',
             'Stupid question, machines cannot be conscious by definition'
         ],
         label: "Q4"

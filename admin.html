@@ -259,6 +259,29 @@
         <div id="authMessage" style="color: #c62828; margin-top: 15px; font-weight: bold;"></div>
     </div>
 
+    <script>
+        // A mistake in one of this site's scripts (say, a stray apostrophe in
+        // config.js) stops the whole page from loading, and the login button then
+        // does nothing. This plain script runs regardless, and says what went wrong.
+        window.addEventListener('error', async (event) => {
+            if (!event.filename || !event.filename.startsWith(location.origin)) return;
+            const file = decodeURIComponent(new URL(event.filename).pathname.split('/').pop());
+            let message = `There is a mistake in ${file}, line ${event.lineno}: ${event.message.replace(/^Uncaught /, "")}`;
+            try {
+                const lines = (await (await fetch(event.filename, { cache: 'no-store' })).text()).split('\n');
+                const line = lines[event.lineno - 1];
+                if (line && line.trim()) message += `\n\n    ${line.trim()}`;
+            } catch (e) { /* The file itself could not be read: the message above will do. */ }
+            message += "\n\nFix it, then reload this page.";
+
+            const loginBtn = document.getElementById('loginBtn');
+            const authMessage = document.getElementById('authMessage');
+            loginBtn.disabled = true;
+            authMessage.style.whiteSpace = 'pre-wrap';
+            authMessage.innerText = message;
+        });
+    </script>
+
     <div id="adminSection" class="hidden">
         
         <div class="top-bar">
