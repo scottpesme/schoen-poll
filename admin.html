@@ -78,16 +78,31 @@
 
         /* Prepared Questions (from config.js) */
         #preparedSection { margin-bottom: 25px; }
-        .question-set-select {
-            width: 100%;
-            margin-bottom: 12px;
-            padding: 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            background: white;
-            color: #1a365d;
-            font: 600 1rem system-ui, -apple-system, sans-serif;
+        /* The menu of question sets: styled as a control, unlike the question cards below it */
+        .question-set-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #64748b;
         }
+        .question-set-select {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            margin-bottom: 18px;
+            padding: 13px 44px 13px 14px;
+            border: none;
+            border-radius: 8px;
+            background: #1a365d url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center / 14px 9px;
+            color: white;
+            font: 700 1rem system-ui, -apple-system, sans-serif;
+            box-shadow: 0 2px 6px rgba(26, 54, 93, 0.25);
+            cursor: pointer;
+        }
+        .question-set-select option { color: #1a365d; background: white; }
         .prepared-message { color: #64748b; font-size: 0.9rem; }
         .prepared-list { display: flex; flex-direction: column; gap: 10px; }
         .prepared-btn {
@@ -298,7 +313,8 @@
         <div id="launchpadSection">
             <div id="preparedSection" class="hidden">
                 <h3 style="margin-bottom: 15px; color: #666;">Prepared questions</h3>
-                <select id="questionSetSelect" class="question-set-select" aria-label="Question set"></select>
+                <label for="questionSetSelect" class="question-set-label">Question set</label>
+                <select id="questionSetSelect" class="question-set-select"></select>
                 <div class="prepared-list" id="preparedList"></div>
             </div>
 
