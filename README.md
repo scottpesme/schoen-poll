@@ -38,10 +38,13 @@ Usage should be self explanatory. In a nutshell:
 
 ## Prepared questions and LaTeX
 
-Questions can be written ahead of time in `config.js`, under `preparedQuestions`. Each entry has the answer `options`, an optional `question` text, and an optional private `label` for the history page:
+Questions can be written ahead of time, in sets: typically one file per lecture, under `questions/`. Each person sharing the poll keeps their files in their own folder (`questions/scott/`, `questions/alice/`, ...), so that nobody edits someone else's questions by accident.
+
+A set is a file with one list of questions. Each entry has the answer `options`, an optional `question` text, and an optional private `label` for the history page:
 
 ```js
-export const preparedQuestions = [
+// questions/scott/class03.js
+export default [
     {
         question: String.raw`Is $\sum_{n=1}^{\infty} \frac{1}{n}$ convergent?`,
         options: ['Yes', 'No', 'Unsure'],
@@ -51,11 +54,23 @@ export const preparedQuestions = [
 ];
 ```
 
+Then list the file in `questionSets`, in `config.js`, with the name the remote's menu should show:
+
+```js
+export const questionSets = [
+    { name: "Scott – Class 3", file: "questions/scott/class03.js" },
+    { name: "Scott – Class 2", file: "questions/scott/class02.js" },
+    ...
+];
+```
+
+The remote has a menu above the prepared questions to pick the set for today's lecture; it remembers the choice on that device. Old sets can stay in the list: they are only loaded when picked. If a file has a mistake in it (a missing comma, say), the remote says it could not load it, and the browser console gives the details.
+
 The optional `answer` field marks the correct option, written either as its text (`answer: 'No'`) or as its position in the list, counting from 1 (`answer: 2`). The remote then offers a **Reveal the correct answer** button, which draws a box around that answer on the results page; the votes stay exactly where they are, so the room can see at a glance how it went. Questions without an `answer` simply have no such button.
 
 The correct answer is stored in `state/display`, which only admins can read, and never in `state/live`: a participant who opened the browser console could otherwise read it off the clicker before you reveal it.
 
-They appear at the top of the admin remote's launchpad, above the usual question types. Launching one puts the question on the results page immediately, while the votes stay hidden: the **Show question** / **Hide question** button on the remote toggles the text, **Reveal results** toggles the bubbles, and **Reveal the correct answer** boxes the right one, each independently of the others. Moving on to the next question hides all three.
+The questions of the chosen set appear at the top of the admin remote's launchpad, above the usual question types. Launching one puts the question on the results page immediately, while the votes stay hidden: the **Show question** / **Hide question** button on the remote toggles the text, **Reveal results** toggles the bubbles, and **Reveal the correct answer** boxes the right one, each independently of the others. Moving on to the next question hides all three.
 
 The answer options themselves are always displayed on the results page while a question is running, so that the room can read them off the big screen and not only off their phones. The vote counts are not printed anywhere on that page: the bubbles are the result.
 
@@ -63,7 +78,7 @@ Long answers look after themselves: each label is confined to its own column and
 
 Both the question text and the answer options can contain LaTeX, written between `$...$` (inline) or `$$...$$` (displayed). It is typeset with [KaTeX](https://katex.org) (loaded from a CDN, like D3) on the results page, on the participants' clicker buttons, on the remote, and in the history. The only exception is the doughnut chart on the remote: it is drawn on a canvas by Chart.js, which shows the raw text.
 
-In `config.js`, prefer ``String.raw`...` `` as above, so that backslashes can be written normally. With ordinary quotes, every backslash must be doubled: `"Is $\\pi$ rational?"`.
+In the question files, prefer ``String.raw`...` `` as above, so that backslashes can be written normally. With ordinary quotes, every backslash must be doubled: `"Is $\\pi$ rational?"`.
 
 Two things to keep in mind:
 

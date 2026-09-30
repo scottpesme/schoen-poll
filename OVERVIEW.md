@@ -6,18 +6,19 @@ Schoen Poll is a static, Firebase-backed live polling system for lectures or pre
 
 - `index.html`: Participant clicker. Users sign in anonymously, listen to `state/live`, and submit or remove one answer per question. The question text and the answer buttons are typeset with KaTeX, so they can contain LaTeX.
 - `clicker.html`: Alias that redirects to `index.html`.
-- `admin.html`: Admin remote. Google-authenticated admins launch prepared questions (from `config.js`) or plain option sets, show or hide the question text on the results page, reveal or hide the correct answer, close or reopen voting, reveal or hide results, show the QR code, add private history labels, simulate votes, adjust result bubble size, and select a results-page style. It listens to `state/live`, `state/display`, `questions/{questionId}`, and `questions/{questionId}/answers`.
+- `admin.html`: Admin remote. Google-authenticated admins pick a question set from a menu (remembered in `localStorage`) and launch its prepared questions or plain option sets, show or hide the question text on the results page, reveal or hide the correct answer, close or reopen voting, reveal or hide results, show the QR code, add private history labels, simulate votes, adjust result bubble size, and select a results-page style. It listens to `state/live`, `state/display`, `questions/{questionId}`, and `questions/{questionId}/answers`.
 - `remote.html`: Alias that redirects to `admin.html`.
 - `results.html`: Projector/overlay page. It loads D3, the KaTeX stylesheet, `schoen-poll.js`, and `schoen-poll.css` to render the question, the answer options, and the live results. It listens to `state/live`, `state/display`, and `questions/{questionId}/answers`.
 - `history.html`: Admin-only history page. It reads past questions, shows their (typeset) question text, computes or reuses cached tallies, renders stacked result bars, lets admins edit private question labels, and can recalculate results or delete all questions from a given day. It reads `state/live`, `questions`, and each relevant `questions/{questionId}/answers` subcollection, but does not use live listeners.
 
 ## Shared Files
 
-- `config.js`: Firebase config, clicker URL used for the QR code, result bubble colors, prepared questions, preset answer-option buttons, and named results-page styles. Each results style defines its background, label and question appearance; the first style is the fallback.
+- `config.js`: Firebase config, clicker URL used for the QR code, result bubble colors, the index of question sets (`questionSets`: a menu name and a file path for each), preset answer-option buttons, and named results-page styles. Each results style defines its background, label and question appearance; the first style is the fallback.
 - `adminauth.js`: Shared Google admin authentication helper. It checks admin status by attempting to read the admin-only `state/display` document.
 - `schoen-poll.js`: Results overlay logic. It listens to Firestore state and answers, renders the question banner, then renders a D3 force simulation of answer bubbles. Answer labels are HTML overlaid on the SVG (not SVG text), so their LaTeX can be typeset. The bubbles and the labels hide with `visibility` rather than `display`, so the SVG keeps its size for layout.
 - `mathtext.js`: Shared LaTeX helper. It exposes `setMathText` and `renderMath`. Math is written between `$...$` (inline) or `$$...$$` (displayed). KaTeX is imported dynamically, so a page still works (showing the LaTeX source) if the CDN is unreachable; text set before KaTeX arrives is typeset as soon as it loads.
 - `schoen-poll.css`: Styling for the results overlay, question banner, labels, QR modal, and unobtrusive login button. `#spChart` (bubbles) and `#spLabels` (options) start hidden and are shown independently by `schoen-poll.js`. The `--sp-label-scale` variable on `#spLabels` shrinks every label (text and outline) at once. Outlined text is painted in two layers (stroke underneath, fill on top), since HTML has no `paint-order`.
+- `questions/<person>/*.js`: Question sets, one file per lecture, each with a default export listing its prepared questions. `admin.html` loads the chosen one with a dynamic `import()`.
 - `README.md`: Setup and Firebase rules documentation.
 
 ## Firestore Shape
@@ -51,7 +52,7 @@ Schoen Poll is a static, Firebase-backed live polling system for lectures or pre
 
 1. The admin opens `admin.html` and signs in with Google.
 2. `adminauth.js` verifies admin access by reading `state/display`.
-3. The admin launches a prepared question (question text plus answers, from `preparedQuestions` in `config.js`), a preset set of options, or custom comma-separated options.
+3. The admin launches a prepared question (question text plus answers, from the question set chosen in the menu), a preset set of options, or custom comma-separated options.
 4. `admin.html` creates a document in `questions`, then writes the active question to `state/live`.
 5. Participants open `index.html`, sign in anonymously, listen to `state/live`, and see the question text (if any) and the active options, with their LaTeX typeset.
 6. Each participant writes their answer to `questions/{questionId}/answers/{userId}`.

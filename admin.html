@@ -78,6 +78,17 @@
 
         /* Prepared Questions (from config.js) */
         #preparedSection { margin-bottom: 25px; }
+        .question-set-select {
+            width: 100%;
+            margin-bottom: 12px;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+            color: #1a365d;
+            font: 600 1rem system-ui, -apple-system, sans-serif;
+        }
+        .prepared-message { color: #64748b; font-size: 0.9rem; }
         .prepared-list { display: flex; flex-direction: column; gap: 10px; }
         .prepared-btn {
             background: white;
@@ -264,6 +275,7 @@
         <div id="launchpadSection">
             <div id="preparedSection" class="hidden">
                 <h3 style="margin-bottom: 15px; color: #666;">Prepared questions</h3>
+                <select id="questionSetSelect" class="question-set-select" aria-label="Question set"></select>
                 <div class="prepared-list" id="preparedList"></div>
             </div>
 
@@ -330,7 +342,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, setDoc, collection, addDoc, serverTimestamp, onSnapshot, getDocs, deleteField, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
-        import { firebaseConfig, colors, presetButtons, preparedQuestions, resultStyles } from "./config.js";
+        import { firebaseConfig, colors, presetButtons, questionSets, resultStyles } from "./config.js";
         import { initAdminAuth } from "./adminauth.js";
         import { setMathText } from "./mathtext.js";
 
@@ -358,6 +370,7 @@
         const questionLabelDisplay = document.getElementById('questionLabelDisplay');
         const preparedSection = document.getElementById('preparedSection');
         const preparedList = document.getElementById('preparedList');
+        const questionSetSelect = document.getElementById('questionSetSelect');
         const currentQuestionText = document.getElementById('currentQuestionText');
         const showQuestionBtn = document.getElementById('showQuestionBtn');
         const showAnswerBtn = document.getElementById('showAnswerBtn');
@@ -749,7 +762,7 @@
 
         // --- CORE ACTIONS ---
 
-        // `prepared` is an entry of preparedQuestions, or nothing at all for the
+        // `prepared` is a question from the chosen question set, or nothing at all for the
         // plain option-set buttons.
         async function launchQuestion(optionsArray, prepared = {}) {
             if (!optionsArray || optionsArray.length === 0) return;
@@ -828,7 +841,7 @@
             addLaunchButton(optionsArray, true);
         });
 
-        // Questions prepared ahead of time in config.js, LaTeX and all.
+        // Questions prepared ahead of time (see questionSets in config.js), LaTeX and all.
         function addPreparedButton(prepared) {
             const btn = document.createElement('button');
             btn.className = 'prepared-btn';
@@ -861,16 +874,62 @@
 
         // Skip malformed entries, and drop empty or repeated options (repeats would
         // collide in the tallies and in the results layout).
-        const validPreparedQuestions = (Array.isArray(preparedQuestions) ? preparedQuestions : [])
-            .filter(prepared => prepared && Array.isArray(prepared.options))
-            .map(prepared => ({
-                ...prepared,
-                options: [...new Set(prepared.options.map(option => String(option).trim()).filter(option => option.length > 0))]
-            }))
-            .filter(prepared => prepared.options.length > 0);
+        function validPreparedQuestions(preparedQuestions) {
+            return (Array.isArray(preparedQuestions) ? preparedQuestions : [])
+                .filter(prepared => prepared && Array.isArray(prepared.options))
+                .map(prepared => ({
+                    ...prepared,
+                    options: [...new Set(prepared.options.map(option => String(option).trim()).filter(option => option.length > 0))]
+                }))
+                .filter(prepared => prepared.options.length > 0);
+        }
 
-        validPreparedQuestions.forEach(addPreparedButton);
-        preparedSection.classList.toggle('hidden', validPreparedQuestions.length === 0);
+        function showPreparedMessage(text) {
+            const message = document.createElement('p');
+            message.className = 'prepared-message';
+            message.textContent = text;
+            preparedList.replaceChildren(message);
+        }
+
+        // The menu of question sets. Each set's file is only loaded once picked,
+        // and the choice is remembered on this device.
+        const QUESTION_SET_KEY = 'schoenPoll.questionSet';
+        const validQuestionSets = (Array.isArray(questionSets) ? questionSets : [])
+            .filter(set => set && typeof set.file === "string" && set.file.trim().length > 0);
+        let questionSetRequest = 0; // Ignores a slow file if another set was picked meanwhile
+
+        async function loadQuestionSet(file) {
+            const request = ++questionSetRequest;
+            localStorage.setItem(QUESTION_SET_KEY, file);
+            showPreparedMessage("Loading...");
+            try {
+                const module = await import(new URL(file, import.meta.url).href);
+                if (request !== questionSetRequest) return;
+                const prepared = validPreparedQuestions(module.default);
+                preparedList.replaceChildren();
+                prepared.forEach(addPreparedButton);
+                if (prepared.length === 0) showPreparedMessage("This set has no questions.");
+            } catch (error) {
+                if (request !== questionSetRequest) return;
+                console.error(`Could not load the question set ${file}:`, error);
+                showPreparedMessage(`Could not load ${file}. Check the browser console for the error.`);
+            }
+        }
+
+        validQuestionSets.forEach(set => {
+            const option = document.createElement('option');
+            option.value = set.file;
+            option.textContent = set.name || set.file;
+            questionSetSelect.appendChild(option);
+        });
+        questionSetSelect.addEventListener('change', () => loadQuestionSet(questionSetSelect.value));
+
+        if (validQuestionSets.length > 0) {
+            const saved = localStorage.getItem(QUESTION_SET_KEY);
+            questionSetSelect.value = validQuestionSets.some(set => set.file === saved) ? saved : validQuestionSets[0].file;
+            preparedSection.classList.remove('hidden');
+            loadQuestionSet(questionSetSelect.value);
+        }
         
         document.getElementById('customLaunchBtn').addEventListener('click', () => {
             const userInput = prompt("Enter custom options, separated by commas:\n(e.g.: Apple, Banana, Cherry)", "");

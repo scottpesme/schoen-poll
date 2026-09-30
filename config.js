@@ -18,161 +18,21 @@ export const colors = ["#4C72B0", "#55A868", "#8172B2", "#64B5CD", "#CCB974", "#
 // export const colors = ["#02468E", "#007355", "#86228F", "#D55E00", "#B79F00", "#4E8CFF"]; // goodnotes colors
 
 
-// Questions prepared ahead of time.
-// They show up at the top of the admin remote's launchpad, ready to launch.
+// Sets of questions prepared ahead of time, typically one file per lecture.
+// The admin remote has a menu to pick one: its questions then show up at the
+// top of the launchpad, ready to launch. The remote remembers the last choice.
 //
-// Each entry accepts:
-//   question: the text shown on the results page and on the clickers (optional),
-//   options:  the answer buttons (required),
-//   answer:   the correct answer (optional), either its text or its position in
-//             the list, counting from 1. The admin remote can then box it on the
-//             results page. It is never sent to the clickers.
-//   label:    a private label for the history page (optional; defaults to the question).
+// Each set has:
+//   name: what the menu shows,
+//   file: the path to its file, relative to this folder.
 //
-// Both `question` and `options` support LaTeX: write inline math between $...$
-// and displayed math between $$...$$. Use String.raw`...` (as below) so that
-// backslashes do not need to be escaped; with ordinary quotes, write "\\pi".
-export const preparedQuestions = [
-    // {
-    //     question: "Is this polling system working for you?",
-    //     options: ['Yes', 'No'],
-    //     label: "Q0"
-    // },
-    // {
-    //     question: "Will AI have beneficial impacts on our society?",
-    //     options: ['Yes for sure', 'Probably', "I don't think so", 'Absolutely not'],
-    //     label: "Q1"
-    // },
-    // {
-    //     question: "The amount of text read by ChatGPT amounts to",
-    //     options: [
-    //         '10 copies of War and Peace',
-    //         String.raw`$10^{7}$ copies of War and Peace`,
-    //         String.raw`$10^{10}$ copies of War and Peace`,
-    //         String.raw`$10^{100}$ copies of War and Peace`
-    //     ],
-    //     answer: 2,
-    //     label: "Q2"
-    // },
-    // {
-    //     question: "The human brain has more connections than ChatGPT has weights?",
-    //     options: ['True', 'False'],
-    //     answer: 'True',
-    //     label: "Q3"
-    // },
-    // {
-    //     question: "Machines will one day be conscious",
-    //     options: [
-    //         'Probably',
-    //         "I don't think so",
-    //         'Stupid question, machines cannot be conscious by definition'
-    //     ],
-    //     label: "Q4"
-    // },
-    // {
-    //     question: String.raw`What is the gradient of $w \mapsto \langle w, x \rangle$?`,
-    //     options: [
-    //         String.raw`$w$`,
-    //         String.raw`$x$`,
-    //         String.raw`$w + x$`,
-    //         "What's a gradient?"
-    //     ],
-    //     answer: 2,
-    //     label: "Q5"
-    // },
-    // {
-    //     question: String.raw`What is $w \mapsto w^\top A w$ equal to?`,
-    //     options: [
-    //         String.raw`$\sum_{i, j = 1}^d A_{ij} w_i w_j$`,
-    //         String.raw`$\sum_{i=1}^d A_{ij} w_i w_j$`,
-    //         String.raw`$|| A w ||^2$`,
-    //         "I don't know"
-    //     ],
-    //     answer: 1,
-    //     label: "Q6"
-    // },
-    // {
-    //     question: String.raw`What is the gradient of $w \mapsto w^\top A w$?`,
-    //     options: [
-    //         String.raw`$A w$`,
-    //         String.raw`$2 A w$`,
-    //         String.raw`$(A + A^\top) w$`,
-    //         "Still don't know what a gradient is"
-    //     ],
-    //     answer: 3,
-    //     label: "Q7"
-    // },
-    // {
-    //     question: String.raw`$w \mapsto \Vert w \Vert^2$ is a convex function`,
-    //     options: ['True', 'False', "I don't know"],
-    //     answer: 'True',
-    //     label: "Q8"
-    // },
-    // {
-    //     question: String.raw`$w \mapsto w^\top A w$ is a convex function`,
-    //     options: ['True', 'False', "I don't know"],
-    //     answer: 'False',
-    //     label: "Q9"
-    // },
-    // {
-    //     question: String.raw`$w \mapsto \exp(w)$ is a convex function`,
-    //     options: ['True', 'False', "I don't know"],
-    //     answer: 'True',
-    //     label: "Q10"
-    // },
-    // {
-    //     question: String.raw`$w \mapsto \ln (w)$ is a convex function`,
-    //     options: ['True', 'False', "I don't know"],
-    //     answer: 'False',
-    //     label: "Q11"
-    // },
-    // {
-    //     question: String.raw`Suppose $f$ is convex and differentiable. Which minimal condition guarantees that $w^\star$ is a global minimiser?`,
-    //     options: [
-    //         String.raw`$\nabla f(w^\star) = 0$ (gradient = 0)`,
-    //         String.raw`$\nabla^2 f(w^\star) = 0$ (Hessian = 0)`,
-    //         String.raw`$\nabla f(w^\star) = 0$ AND $\nabla^2 f(w^\star) = 0$`,
-    //         "I don't know"
-    //     ],
-    //     answer: 1,
-    //     label: "Q12"
-    // }
-    {
-        question: "A convex function always has a global minimum.",
-        options: ['True', 'False'],
-        answer: 'False',
-        label: "Convex function and minima"
-    },
-    {
-        question: String.raw`Whatever the dataset $(x_i, y_i)_{i \in \{1, \ldots, n\}} \in \mathbb{R}^d \times \mathbb{R}$, there exists a function $f$ such that $f(x_i) = y_i$ for all $i$.`,
-        options: ['True', 'False'],
-        answer: 'False',
-        label: "Non interpolatable datasets"
-    },
-    {
-        question: String.raw`Consider the empirical risk $L(w) = \sum_{i=1}^n \ell(f_w(x_i), y_i)$ where $\ell$ corresponds to the squared error. Then $L(w) = 0$ if and only if $f_w(x_i) = y_i$ for all $i \in \{1, \ldots, n\}$.`,
-        options: ['True', 'False'],
-        answer: 'True',
-        label: "Zero risk means interpolation"
-    },
-    {
-        question: String.raw`Let $f$ be a convex function which has a global minimiser $w^\star$. Then $f$ is differentiable at $w^\star$ and $\nabla f(w^\star) = 0$.`,
-        options: ['True', 'False'],
-        answer: 'False',
-        label: "Convex function and gradient = 0"
-    },
-    {
-        question: String.raw`For the parametrisation $f_w(x) = w_1 x_1 + w_2 x_2 + w_3 \sin(x_3)$, the empirical risk with the squared error $\ell$ is convex.`,
-        options: ['True', 'False'],
-        answer: 'True',
-        label: "Linear param but non linear in data"
-    },
-    {
-        question: String.raw`For the parametrisation $f_w(x) = w_1 x_1 + w_2 x_2 + \sin(w_3) x_3$, the empirical risk with the squared error $\ell$ is convex.`,
-        options: ['True', 'False'],
-        answer: 'False',
-        label: "Non linear parametrisation"
-    }
+// Keep your files in your own folder under questions/, so that colleagues
+// sharing this poll do not edit each other's questions. Each file has one list
+// of questions (`export default [...]`); see questions/scott/class01.js for an
+// example, and README.md ("Prepared questions and LaTeX") for the format.
+export const questionSets = [
+    { name: "Scott – Class 2", file: "questions/scott/class02.js" },
+    { name: "Scott – Class 1", file: "questions/scott/class01.js" },
 ];
 
 
