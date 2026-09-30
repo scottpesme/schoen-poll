@@ -3,7 +3,11 @@
 export default [
     {
         question: String.raw`For $\lambda > 0$, the quantity $(X^\top X + \lambda I)^{-1} X^\top y$ is equal to:`,
-        options: ['X^\top (X X^\top + \lambda I)^{-1} y', 'X (X X^\top + \lambda I)^{-1} y', 'X^\top (X^\top X + \lambda I)^{-1} y'],
+        options: [
+            String.raw'X^\top (X X^\top + \lambda I)^{-1} y', 
+            String.raw'X (X X^\top + \lambda I)^{-1} y', 
+            String.raw'X^\top (X^\top X + \lambda I)^{-1} y'
+        ],
         answer: '1',
         label: "Ridge regression"
     }
