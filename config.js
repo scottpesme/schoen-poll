@@ -33,6 +33,7 @@ export const colors = ["#4C72B0", "#55A868", "#8172B2", "#64B5CD", "#CCB974", "#
 export const questionSets = [
     { name: "Scott – Class 2", file: "questions/scott/class02.js" },
     { name: "Scott – Class 1", file: "questions/scott/class01.js" },
+    { name: "Scott – Intro", file: "questions/scott/intro.js" },
 ];
 
 
