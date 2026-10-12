@@ -51,5 +51,16 @@ export default [
         options: ['True', 'False'],
         answer: 'True',
         label: "Linear param but non linear in data"
+    },
+    {
+        question: String.raw`With labels $y_i \in \{-1, +1\}$, what is the gradient of the logistic risk $L(w) = \frac{1}{n} \sum_{i=1}^n \ln\big(1 + e^{-y_i \langle w, x_i \rangle}\big)$?`,
+        options: [
+            String.raw`$-\frac{1}{n} \sum_{i=1}^n \frac{y_i x_i}{1 + e^{-y_i \langle w, x_i \rangle}}$`,
+            String.raw`$-\frac{1}{n} \sum_{i=1}^n \frac{y_i x_i}{1 + e^{y_i \langle w, x_i \rangle}}$`,
+            String.raw`$-\frac{1}{n} \sum_{i=1}^n \frac{x_i}{1 + e^{y_i \langle w, x_i \rangle}}$`,
+            String.raw`$\frac{1}{n} \sum_{i=1}^n \frac{y_i x_i}{1 + e^{y_i \langle w, x_i \rangle}}$`
+        ],
+        answer: 2,
+        label: "Gradient of the logistic risk"
     }
 ];
