@@ -1,0 +1,95 @@
+\section{Useful Formulas and Good Practices}
+
+\subsection{Centring and standardising the features}
+\label{subsec:standardise}
+
+Three separate places in these notes ask for the features to be rescaled before
+fitting, for three different reasons. Since it is the same operation every time, here
+it is once and for all.
+
+\paragraph{The operation.}
+For each coordinate $j = 1, \dots, d$, compute the empirical mean and standard
+deviation of that feature over the training set,
+\[
+\bar x_j = \frac{1}{n} \sum_{i=1}^n x_{i,j} ,
+\qquad
+\hat s_j = \sqrt{ \frac{1}{n} \sum_{i=1}^n (x_{i,j} - \bar x_j)^2 } ,
+\]
+and replace each entry of the design matrix by
+\[
+\tilde x_{i,j} = \frac{x_{i,j} - \bar x_j}{\hat s_j} .
+\]
+Every column of the new design matrix then has mean $0$ and variance $1$. One usually
+centres the response as well, $\tilde y_i = y_i - \bar y$. Two caveats on the
+mechanics: a constant column added for the intercept must be left alone (its standard
+deviation is $0$), and a feature that is constant on the training set should be dropped
+rather than divided by $\hat s_j = 0$. The constants $\bar x_j$ and $\hat s_j$ must be
+kept, since a new input has to be put through the very same transformation before the
+model can be applied to it.
+
+\paragraph{Why: three reasons.}
+\begin{itemize}
+    \item \emph{Conditioning, hence the speed of gradient descent}
+    (\Cref{rem:step-size}). The number of GD iterations is governed by the condition
+    number $\lambda_{\max}(X^\top X)/\lambda_{\min}(X^\top X)$, because a single step
+    size $\gamma$ must be small enough for the steepest direction while progress along
+    the flattest one is set by the smallest eigenvalue. Features measured in wildly
+    different units (a surface in $\text{m}^2$ next to a number of rooms) make that
+    ratio enormous for no reason at all, and gradient descent then crawls.
+    \item \emph{Comparability of the ridge penalty} (\Cref{subsec:ridge}). A single
+    $\lambda$ is applied to every coordinate of $w$, so it only means the same thing in
+    every direction if the coordinates are on the same scale. Measuring a surface in
+    $\text{m}^2$ rather than $\text{km}^2$ multiplies the corresponding feature by
+    $10^6$ and divides its weight by $10^6$, so ridge would penalise two encodings of
+    the \emph{same} model completely differently.
+    \item \emph{It costs nothing for ordinary least squares.} The least-squares
+    predictor is unchanged by any invertible linear reparametrisation of the features:
+    replacing $X$ by $XA$ replaces $w^\star$ by $A^{-1}w^\star$ and leaves the
+    predictions $Xw^\star$ alone. So standardising never hurts the fit, which is why it
+    is applied by default.
+\end{itemize}
+
+\paragraph{The trap: compute the statistics on the training data only.}
+This is the mistake that silently inflates every reported number. The constants
+$\bar x_j$ and $\hat s_j$ are \emph{estimated from data}, so they are part of the
+fitting procedure and must be computed on the training portion alone, then applied
+unchanged to the validation and test portions. Standardising the full dataset first
+lets information about the held-out points (their mean, their spread) leak into the
+fit, and the resulting error estimate is optimistic. The same applies inside
+cross-validation: the statistics must be recomputed on each of the $K-1$ training
+folds, not once on the whole set. In practice this is what a ``pipeline'' object in a
+machine learning library is for. The rule is worth stating in general: \emph{any}
+quantity estimated from data is part of the model, and must never see the test set.
+
+
+\subsection{Numerical stability}
+\label{subsec:numerics}
+
+The formulas of these notes are exact on paper and can overflow on a computer. Two
+places where this bites, and the standard fixes, all of which are what the libraries
+do internally.
+
+\paragraph{Log-sum-exp: subtract the maximum.}
+The multiclass loss of \Cref{subsec:multiclass} contains $\log \sum_{k} e^{a_k}$. In
+floating point $e^{a_k}$ overflows to infinity for $a_k$ around $710$ and underflows to
+zero for $a_k$ around $-745$, so the expression evaluated naively returns \texttt{inf}
+or $\log 0 = -\infty$ on perfectly reasonable scores. The fix uses the identity, valid
+for any $c \in \R$,
+\[
+\log \sum_{k=1}^K e^{a_k} = c + \log \sum_{k=1}^K e^{a_k - c} ,
+\]
+with the choice $c = \max_k a_k$. Every exponent is then $\leq 0$, so no term can
+overflow, and the largest is exactly $e^0 = 1$, so the sum cannot underflow to zero
+either. The same trick stabilises the softmax weights $p_k(x)$, which are unchanged by
+subtracting a constant from all the scores (this is the redundancy of the
+parametrisation, put to work).
+
+
+\paragraph{Do not form $X^\top X$.}
+For the normal equations, forming the matrix $X^\top X$ and inverting it squares the
+condition number of $X$, so roughly half the available digits of precision are lost
+before the solve even begins. This is on top of the cost argument of
+\Cref{subsec:gd}. One instead solves the least-squares problem directly from $X$, by a
+$QR$ factorisation or an SVD; this is what a routine such as
+\texttt{numpy.linalg.lstsq} does, and it is the reason to prefer it over an explicit
+\texttt{inv(X.T @ X) @ X.T @ y}.
