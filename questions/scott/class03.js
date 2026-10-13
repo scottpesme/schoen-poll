@@ -73,5 +73,16 @@ export default [
         ],
         answer: 3,
         label: "Random features until d = n"
+    },
+    {
+        question: String.raw`With $m_i = y_i \langle w, x_i \rangle$, $y_i \in \{-1, +1\}$ and $\sigma(m) = \frac{1}{1 + e^{-m}}$, what is the Hessian of the logistic risk $L(w) = \frac{1}{n} \sum_{i=1}^n \ln\big(1 + e^{-m_i}\big)$?`,
+        options: [
+            String.raw`$\frac{1}{n} \sum_{i=1}^n \sigma(-m_i)\, x_i x_i^\top$`,
+            String.raw`$\frac{1}{n} \sum_{i=1}^n \sigma(m_i) \sigma(-m_i)\, y_i\, x_i x_i^\top$`,
+            String.raw`$\frac{1}{n} \sum_{i=1}^n \sigma(m_i) \sigma(-m_i)\, x_i x_i^\top$`,
+            String.raw`$-\frac{1}{n} \sum_{i=1}^n \sigma(m_i) \sigma(-m_i)\, x_i x_i^\top$`
+        ],
+        answer: 3,
+        label: "Hessian of the logistic risk"
     }
 ];
