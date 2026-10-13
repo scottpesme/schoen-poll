@@ -57,8 +57,8 @@ export default [
         options: [
             String.raw`$-\frac{1}{n} \sum_{i=1}^n \frac{y_i x_i}{1 + e^{-y_i \langle w, x_i \rangle}}$`,
             String.raw`$-\frac{1}{n} \sum_{i=1}^n \frac{y_i x_i}{1 + e^{y_i \langle w, x_i \rangle}}$`,
-            String.raw`$-\frac{1}{n} \sum_{i=1}^n \frac{x_i}{1 + e^{y_i \langle w, x_i \rangle}}$`,
-            String.raw`$\frac{1}{n} \sum_{i=1}^n \frac{y_i x_i}{1 + e^{y_i \langle w, x_i \rangle}}$`
+            String.raw`$-\frac{1}{n} \sum_{i=1}^n \frac{w}{1 + e^{-y_i \langle w, x_i \rangle}}$`,
+            String.raw`$\frac{1}{n} \sum_{i=1}^n \frac{y_i x_i}{1 + e^{-y_i \langle w, x_i \rangle}}$`
         ],
         answer: 2,
         label: "Gradient of the logistic risk"
