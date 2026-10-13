@@ -62,5 +62,16 @@ export default [
         ],
         answer: 2,
         label: "Gradient of the logistic risk"
+    },
+    {
+        question: String.raw`You predict the temperature from $d = 5$ physical measurements, with $n = 100$ samples. Least squares gives a training loss $> 0$. You then add $95$ extra features drawn at random, which carry no information about the temperature. The training loss now:`,
+        options: [
+            'Stays the same',
+            'Decreases, but stays > 0',
+            'Becomes 0',
+            'Increases'
+        ],
+        answer: 3,
+        label: "Random features until d = n"
     }
 ];
